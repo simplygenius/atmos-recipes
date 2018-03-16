@@ -1,0 +1,2 @@
+description: A scalable AWS VPC
+dependent_templates: aws/scaffold

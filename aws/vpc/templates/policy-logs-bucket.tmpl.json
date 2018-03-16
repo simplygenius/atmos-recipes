@@ -1,0 +1,18 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AWSELBWrite",
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::${bucket}/lb-access-logs/*/AWSLogs/${account_id}/*",
+      "Principal": {
+        "AWS": [
+          "arn:aws:iam::127311923021:root"
+        ]
+      }
+    }
+  ]
+}

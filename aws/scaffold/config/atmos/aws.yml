@@ -1,0 +1,22 @@
+# The cloud provider you are using
+provider: aws
+
+providers:
+  aws:
+    region: us-east-1
+    auth:
+      session_duration: 3600
+      assume_role_name: "arn:aws:iam::#{account_id}:role/#{atmos_env}-admin"
+    backend:
+      type: s3
+      bucket: "#{global_name_prefix}terraform-state"
+      key: "terraform.tfstate"
+      region: "#{region}"
+      encrypt: true
+      dynamodb_table: "#{local_name_prefix}AtmosTerraformLock"
+    secret:
+      type: s3
+      bucket: "#{global_name_prefix}secrets"
+      prefix: ""
+      region: "#{region}"
+      encrypt: true
