@@ -1,0 +1,4 @@
+description: DNS and certificate resources for a AWS VPC
+dependent_templates: aws/vpc
+optional:
+  config/atmos/dns.yml: ! new_keys?("#{template_dir}/config/atmos/dns.yml", "config/atmos/dns.yml")
