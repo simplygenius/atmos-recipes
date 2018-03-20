@@ -4,7 +4,7 @@ resource "aws_internet_gateway" "default" {
   tags {
     Name = "${var.local_name_prefix}public-gateway"
     Environment = "${var.atmos_env}"
-    Source = "Atmos"
+    Source = "atmos"
   }
 }
 
@@ -40,7 +40,7 @@ resource "aws_subnet" "public" {
   tags {
     Name = "${var.local_name_prefix}public-subnet"
     Environment = "${var.atmos_env}"
-    Source = "Atmos"
+    Source = "atmos"
   }
 }
 
@@ -52,7 +52,7 @@ resource "aws_route_table" "public" {
   tags {
     Name = "${var.local_name_prefix}public-routes"
     Environment = "${var.atmos_env}"
-    Source = "Atmos"
+    Source = "atmos"
   }
 }
 

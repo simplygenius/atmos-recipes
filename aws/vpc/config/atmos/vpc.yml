@@ -1,0 +1,5 @@
+# Variables for the aws/vpc template
+#
+
+az_count: 2
+vpc_cidr: 10.10.0.0/16

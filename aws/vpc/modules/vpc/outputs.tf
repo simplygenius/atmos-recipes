@@ -14,14 +14,12 @@ output "private_subnet_ids" {
   value = "${aws_subnet.private.*.id}"
 }
 
-output "primary_zone_id" {
-  value = "${aws_route53_zone.primary.zone_id}"
-}
-
-output "internal_zone_id" {
-  value = "${aws_route53_zone.internal.zone_id}"
-}
-
 output "default_security_group_id" {
-  value = "${aws_default_security_group.default.id}"
+  value = "${element(concat(
+    aws_default_security_group.default-both.*.id,
+    aws_default_security_group.default-egress.*.id,
+    aws_default_security_group.default-ingress.*.id,
+    aws_default_security_group.default-none.*.id,
+    list("")
+  ), 0)}"
 }

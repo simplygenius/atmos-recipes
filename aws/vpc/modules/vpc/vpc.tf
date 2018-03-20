@@ -7,32 +7,62 @@ resource "aws_vpc" "primary" {
   tags {
     Name = "${var.local_name_prefix}primary-vpc"
     Environment = "${var.atmos_env}"
-    Source = "Atmos"
+    Source = "atmos"
   }
 }
 
-resource "aws_vpc_dhcp_options" "internal-dhcp-options" {
-  // Some OSes may have trouble with multiple domains here, if so nix the ec2.internal one
-  domain_name = "${aws_route53_zone.internal.name} ec2.internal"
-
-  // maps to "${cidrhost(var.vpc_cidr, 2)}", which goes to our route53 internal zone
-  domain_name_servers = [
-    "AmazonProvidedDNS"
-  ]
-
-  tags {
-    Name = "${var.local_name_prefix}internal-dhcp-options"
-    Environment = "${var.atmos_env}"
-    Source = "Atmos"
-  }
-}
-
-resource "aws_vpc_dhcp_options_association" "internal-dhcp-options" {
+resource "aws_default_security_group" "default-both" {
+  count = "${var.permissive_default_security_group == "both" ? 1 : 0}"
   vpc_id = "${aws_vpc.primary.id}"
-  dhcp_options_id = "${aws_vpc_dhcp_options.internal-dhcp-options.id}"
+
+  egress {
+    protocol = "-1"
+    from_port = 0
+    to_port = 0
+
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+  }
+
+  ingress {
+    from_port = "0"
+    to_port = "0"
+    protocol = "-1"
+    self = true
+  }
 }
 
-resource "aws_default_security_group" "default" {
+resource "aws_default_security_group" "default-egress" {
+  count = "${var.permissive_default_security_group == "egress" ? 1 : 0}"
+  vpc_id = "${aws_vpc.primary.id}"
+
+  egress {
+    protocol = "-1"
+    from_port = 0
+    to_port = 0
+
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+  }
+
+}
+
+resource "aws_default_security_group" "default-ingress" {
+  count = "${var.permissive_default_security_group == "ingress" ? 1 : 0}"
+  vpc_id = "${aws_vpc.primary.id}"
+
+  ingress {
+    from_port = "0"
+    to_port = "0"
+    protocol = "-1"
+    self = true
+  }
+}
+
+resource "aws_default_security_group" "default-none" {
+  count = "${var.permissive_default_security_group == "none" ? 1 : 0}"
   vpc_id = "${aws_vpc.primary.id}"
 }
 

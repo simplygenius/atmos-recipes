@@ -18,10 +18,6 @@ variable "local_name_prefix" {
   default = ""
 }
 
-variable "domain" {
-  description = "The primary domain name"
-}
-
 variable "account_ids" {
   description = "AWS account ids"
 }
@@ -33,6 +29,24 @@ variable "az_count" {
 variable "vpc_tenancy" {
   description = "Instance tenancy for the VPC"
   default = "default"
+}
+
+variable "permissive_default_security_group" {
+  description = <<-EOF
+    Sets up the default security group to allow permissive internal ingress,
+    external egress, or both. Its safe and usually desired to leave this set to
+    "egress" (e.g. to allow all instances to reach out to the internet to
+    download packages, etc), and rely on ingress rules for preventing internal
+    communication.  If set to "ingress" or "both", it also sets up the default
+    security group to allow permissive internal access. That is, all resources
+    that have the default security group will allow access on any port/protocol
+    from any other resource that also has the default security group. Its a
+    good idea to leave this off and setup security group rules for ingress on a
+    case by case basis (e.g. instance -> rds).  However, it does come in handy
+    for debugging.  Set to "none" to setup an empty default security group, and
+    anything else to leave it untouched.
+  EOF
+  default = "egress"
 }
 
 variable "vpc_cidr" {

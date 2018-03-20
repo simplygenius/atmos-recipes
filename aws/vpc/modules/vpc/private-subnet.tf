@@ -9,7 +9,7 @@ resource "aws_subnet" "private" {
   tags {
     Name = "${var.local_name_prefix}private-primary-subnet"
     Environment = "${var.atmos_env}"
-    Source = "Atmos"
+    Source = "atmos"
   }
 }
 
@@ -21,7 +21,7 @@ resource "aws_route_table" "private" {
   tags {
     Name = "${var.local_name_prefix}private-routes"
     Environment = "${var.atmos_env}"
-    Source = "Atmos"
+    Source = "atmos"
   }
 }
 
