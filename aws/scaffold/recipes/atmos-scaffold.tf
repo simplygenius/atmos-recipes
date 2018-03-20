@@ -51,6 +51,9 @@ variable "force_destroy_buckets" {
 locals {
   ops_env = "ops"
   ops_account = "${lookup(var.account_ids, local.ops_env)}"
+
+  logs_bucket = "${var.global_name_prefix}logs"
+  backup_bucket = "${var.global_name_prefix}backup"
 }
 
 resource "null_resource" "bootstrap-ops" {
@@ -103,7 +106,7 @@ resource "aws_s3_bucket" "backend" {
 
   tags {
     Env = "${var.atmos_env}"
-    Source = "Atmos"
+    Source = "atmos"
   }
 }
 
@@ -120,7 +123,7 @@ resource "aws_dynamodb_table" "backend-lock-table" {
 
   tags {
     Env = "${var.atmos_env}"
-    Source = "Atmos"
+    Source = "atmos"
   }
 }
 
@@ -145,7 +148,7 @@ resource "aws_s3_bucket" "secret" {
 
   tags {
     Env = "${var.atmos_env}"
-    Source = "Atmos"
+    Source = "atmos"
   }
 }
 
@@ -236,4 +239,43 @@ resource "aws_iam_group_policy" "self-management" {
   group = "${aws_iam_group.all-users.name}"
 
   policy = "${data.template_file.policy-self-management.rendered}"
+}
+
+// Use the AWS console to subscribe an email address to this alert
+resource "aws_sns_topic" "cloudwatch-alerts" {
+  name = "${var.local_name_prefix}ops-alerts"
+  display_name = "Ops Alerts"
+}
+
+data "template_file" "policy-logs-bucket" {
+  vars {
+    bucket = "${local.logs_bucket}"
+    account_id = "${var.account_ids[var.atmos_env]}"
+  }
+
+  template = "${file("../templates/policy-logs-bucket.tmpl.json")}"
+}
+
+resource "aws_s3_bucket" "logs" {
+  bucket = "${local.logs_bucket}"
+  acl = "log-delivery-write"
+  force_destroy = "${var.force_destroy_buckets}"
+
+  lifecycle_rule {
+    prefix = ""
+    enabled = true
+
+    expiration {
+      days = 60
+    }
+  }
+
+  // ELB: https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-access-logs.html#attach-bucket-policy
+  policy = "${data.template_file.policy-logs-bucket.rendered}"
+}
+
+resource "aws_s3_bucket" "backup" {
+  bucket = "${local.backup_bucket}"
+  acl = "private"
+  force_destroy = "${var.force_destroy_buckets}"
 }
