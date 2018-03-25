@@ -1,0 +1,5 @@
+description: Relational Database Service
+dependent_templates:
+  - aws/scaffold
+  - aws/vpc
+  - aws/dns

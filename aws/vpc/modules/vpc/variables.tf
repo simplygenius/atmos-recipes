@@ -18,10 +18,6 @@ variable "local_name_prefix" {
   default = ""
 }
 
-variable "account_ids" {
-  description = "AWS account ids"
-}
-
 variable "az_count" {
   description = "The number of AZs to use for redundancy"
 }

@@ -6,7 +6,10 @@
       "Principal": {
         "AWS": "arn:aws:iam::${ops_account}:root"
       },
-      "Condition": {"Bool": {"aws:MultiFactorAuthPresent": "true"}},
+      ${require_mfa
+          ? "\"Condition\": {\"Bool\": {\"aws:MultiFactorAuthPresent\": \"true\"}},"
+          : ""
+      }
       "Action": "sts:AssumeRole"
     }
   ]

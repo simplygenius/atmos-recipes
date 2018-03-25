@@ -21,7 +21,8 @@ variable "permissive_default_security_group" {
     good idea to leave this off and setup security group rules for ingress on a
     case by case basis (e.g. instance -> rds).  However, it does come in handy
     for debugging.  Set to "none" to setup an empty default security group, and
-    anything else to leave it untouched.
+    anything else to leave it untouched.  Note that this has no effect if you
+    don't also attach the default security group to your resource
   EOF
   default = "egress"
 }
@@ -33,7 +34,6 @@ module "vpc" {
   atmos_env = "${var.atmos_env}"
   global_name_prefix = "${var.global_name_prefix}"
   local_name_prefix = "${var.local_name_prefix}"
-  account_ids = "${var.account_ids}"
 
   az_count = "${var.az_count}"
   vpc_cidr = "${var.vpc_cidr}"

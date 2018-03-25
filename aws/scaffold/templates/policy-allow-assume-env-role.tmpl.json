@@ -3,6 +3,6 @@
     "Statement": {
         "Effect": "Allow",
         "Action": "sts:AssumeRole",
-        "Resource": "arn:aws:iam::${account_id}:role/${atmos_env}-admin"
+        "Resource": "arn:aws:iam::${account_id}:role/${role_name}"
     }
 }

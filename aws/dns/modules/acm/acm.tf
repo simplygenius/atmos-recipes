@@ -1,7 +1,7 @@
 locals {
   ns_msg = <<-EOF
 Certificate validation will not succeed until you register the
-'${var.domain}' zone nameservers with your registrar
+${var.domain} zone nameservers with your registrar
 
 ${join("\n", var.zone_name_servers)}
   EOF
@@ -19,7 +19,7 @@ resource "aws_acm_certificate" "primary" {
   validation_method = "DNS"
 
   provisioner "local-exec" {
-    command = "echo '${local.ns_ipc}' | $ATMOS_IPC_CLIENT"
+    command = "printf '${local.ns_ipc}' | $ATMOS_IPC_CLIENT"
     on_failure = "continue"
   }
 

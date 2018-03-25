@@ -8,7 +8,11 @@ variable "account_ids" {
 }
 
 variable "atmos_config" {
-  description = "The atmos config hash, value supplied by atmos runtime.  Convenience to allow retrieving atmos configuration without having to define additional variable resources"
+  description = <<-EOF
+    The atmos config hash, value supplied by atmos runtime.  Convenience to allow
+    retrieving atmos configuration without having to define additional variable
+    resources
+  EOF
   type = "map"
 }
 
@@ -48,12 +52,18 @@ variable "force_destroy_buckets" {
   default = false
 }
 
+variable "ops_admins_env" {
+  description = <<-EOF
+    Members of the ops admin group will also have admin access to all other
+    environments
+  EOF
+  default = 1
+}
+
 locals {
   ops_env = "ops"
   ops_account = "${lookup(var.account_ids, local.ops_env)}"
-
-  logs_bucket = "${var.global_name_prefix}logs"
-  backup_bucket = "${var.global_name_prefix}backup"
+  envs_without_ops = "${compact(split(",", replace(join(",", keys(var.account_ids)), local.ops_env, "")))}"
 }
 
 resource "null_resource" "bootstrap-ops" {
@@ -63,9 +73,10 @@ resource "null_resource" "bootstrap-ops" {
     state_bucket = "${aws_s3_bucket.backend.id}"
     state_lock_table = "${aws_dynamodb_table.backend-lock-table.id}"
     secret_bucket = "${aws_s3_bucket.secret.id}"
-    ops_admin_groups = "${join(",", aws_iam_group_policy.env-admin.*.id)}",
     env_admin_role = "${aws_iam_role_policy.env-admin.id}"
-    all_user_group = "${aws_iam_group_policy.self-management.id}"
+    env_admin_policy = "${join(",", aws_iam_group_policy.env-admin.*.id)}",
+    bootstrap_admin_policy = "${join(",", aws_iam_group_policy.ops-bootstrap-admin.*.id)}",
+    all_user_policy = "${aws_iam_group_policy.self-management.id}"
   }
 }
 
@@ -132,7 +143,17 @@ data "template_file" "policy-secret-bucket" {
     bucket = "${var.secret_bucket}"
   }
 
-  template = "${file("../templates/policy-backend-bucket.tmpl.json")}"
+  template = "${file("../templates/policy-secret-bucket.tmpl.json")}"
+}
+
+resource "aws_kms_key" "secret" {
+  description = "Key for encrypting secrets"
+  enable_key_rotation = true
+
+  tags {
+    Env = "${var.atmos_env}"
+    Source = "atmos"
+  }
 }
 
 resource "aws_s3_bucket" "secret" {
@@ -165,22 +186,12 @@ resource "aws_iam_role" "env-admin" {
   name  = "${var.atmos_env}-admin"
   path  = "/"
 
-//  lifecycle {
-//    prevent_destroy = true
-//    create_before_destroy = true
-//  }
-
   assume_role_policy = "${data.template_file.policy-assume-env-role.rendered}"
 }
 
 resource "aws_iam_role_policy" "env-admin" {
   name = "${var.atmos_env}-admin"
   role = "${aws_iam_role.env-admin.name}"
-
-//  lifecycle {
-//    prevent_destroy = true
-//    create_before_destroy = true
-//  }
 
   policy = "${file("../templates/policy-allow-all.json")}"
 }
@@ -196,8 +207,9 @@ data "template_file" "policy-allow-assume-env-role" {
   count = "${var.atmos_env == local.ops_env ? length(var.account_ids) : 0}"
 
   vars {
-    atmos_env = "${element(keys(var.account_ids), count.index)}"
     account_id = "${element(values(var.account_ids), count.index)}"
+    // don't use auth_assume_role_name as it is based on current atmos_env
+    role_name = "${element(keys(var.account_ids), count.index)}-admin"
   }
 
   template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
@@ -206,9 +218,52 @@ data "template_file" "policy-allow-assume-env-role" {
 resource "aws_iam_group_policy" "env-admin" {
   count = "${var.atmos_env == local.ops_env ? length(var.account_ids) : 0}"
 
-  name = "admins-${element(keys(var.account_ids), count.index)}"
+  name = "allow-assume-role-to-${element(keys(var.account_ids), count.index)}"
   group = "${aws_iam_group.env-admin.*.id[count.index]}"
   policy = "${data.template_file.policy-allow-assume-env-role.*.rendered[count.index]}"
+}
+
+// ops members need to be allowed to assume role to the bootstrap role name
+// for each env account
+data "template_file" "policy-allow-assume-env-role-for-bootstrap" {
+  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) : 0}"
+
+  vars {
+    account_id = "${lookup(var.account_ids, local.envs_without_ops[count.index])}"
+    role_name = "${var.atmos_config["auth_bootstrap_assume_role_name"]}"
+  }
+
+  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
+}
+
+resource "aws_iam_group_policy" "ops-bootstrap-admin" {
+  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) : 0}"
+
+  name = "allow-bootstrap-assume-role-to-${local.envs_without_ops[count.index]}"
+  group = "ops-admin"
+  policy = "${data.template_file.policy-allow-assume-env-role-for-bootstrap.*.rendered[count.index]}"
+}
+
+// A convenience to allow members of the ops admin group to also admin all
+// other environments
+data "template_file" "policy-allow-assume-env-role-to-env-for-ops" {
+  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) * var.ops_admins_env : 0}"
+
+  vars {
+    account_id = "${lookup(var.account_ids, local.envs_without_ops[count.index])}"
+    // don't use auth_assume_role_name as it is based on current atmos_env
+    role_name = "${element(keys(var.account_ids), count.index)}-admin"
+  }
+
+  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
+}
+
+resource "aws_iam_group_policy" "ops-env-admin" {
+  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) * var.ops_admins_env : 0}"
+
+  name = "allow-assume-role-to-${local.envs_without_ops[count.index]}-for-ops"
+  group = "ops-admin"
+  policy = "${data.template_file.policy-allow-assume-env-role-to-env-for-ops.*.rendered[count.index]}"
 }
 
 resource "aws_iam_group" "all-users" {
@@ -241,41 +296,80 @@ resource "aws_iam_group_policy" "self-management" {
   policy = "${data.template_file.policy-self-management.rendered}"
 }
 
-// Use the AWS console to subscribe an email address to this alert
-resource "aws_sns_topic" "cloudwatch-alerts" {
-  name = "${var.local_name_prefix}ops-alerts"
-  display_name = "Ops Alerts"
-}
-
-data "template_file" "policy-logs-bucket" {
+data "template_file" "policy-assume-env-deployer-role" {
   vars {
-    bucket = "${local.logs_bucket}"
-    account_id = "${var.account_ids[var.atmos_env]}"
+    ops_account = "${local.ops_account}"
+    require_mfa = false
   }
 
-  template = "${file("../templates/policy-logs-bucket.tmpl.json")}"
+  template = "${file("../templates/policy-assume-env-role.tmpl.json")}"
 }
 
-resource "aws_s3_bucket" "logs" {
-  bucket = "${local.logs_bucket}"
-  acl = "log-delivery-write"
-  force_destroy = "${var.force_destroy_buckets}"
+resource "aws_iam_role" "deployer" {
+  name               = "${var.atmos_env}-deployer"
+  path               = "/"
+  assume_role_policy = "${data.template_file.policy-assume-env-deployer-role.rendered}"
+}
 
-  lifecycle_rule {
-    prefix = ""
-    enabled = true
+resource "aws_iam_user" "deployer" {
+  count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
-    expiration {
-      days = 60
-    }
+  name = "deployer"
+  path = "/"
+}
+
+data "template_file" "policy-allow-assume-env-role-for-deployer" {
+  count = "${var.atmos_env == local.ops_env ? length(var.account_ids) : 0}"
+
+  vars {
+    account_id = "${element(values(var.account_ids), count.index)}"
+    // don't use auth_assume_role_name as it is based on current atmos_env
+    role_name = "${element(keys(var.account_ids), count.index)}-deployer"
   }
 
-  // ELB: https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-access-logs.html#attach-bucket-policy
-  policy = "${data.template_file.policy-logs-bucket.rendered}"
+  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
 }
 
-resource "aws_s3_bucket" "backup" {
-  bucket = "${local.backup_bucket}"
-  acl = "private"
-  force_destroy = "${var.force_destroy_buckets}"
+resource "aws_iam_user_policy" "deployer" {
+  count = "${var.atmos_env == local.ops_env ? length(var.account_ids) : 0}"
+
+  name = "allow-assume-role-to-${element(keys(var.account_ids), count.index)}-deployer"
+  user = "${aws_iam_user.deployer.name}"
+
+  policy = "${data.template_file.policy-allow-assume-env-role-for-deployer.*.rendered[count.index]}"
+}
+
+resource "aws_iam_access_key" "deployer" {
+  count = "${var.atmos_env == local.ops_env ? 1 : 0}"
+
+  user = "${aws_iam_user.deployer.name}"
+}
+
+// Set enabled=1 to display deployer keys to get them for your CI system
+module "test" {
+  source = "../modules/atmos_ipc"
+  action = "notify"
+  enabled = "${0 * (var.atmos_env == local.ops_env ? 1 : 0)}"
+  params = {
+    message = <<-EOF
+    deployer-access-key: ${join("", aws_iam_access_key.deployer.*.id)}
+    deployer-access-secret: ${join("", aws_iam_access_key.deployer.*.secret)}
+    EOF
+  }
+}
+
+resource "aws_iam_role_policy" "deployer" {
+  name = "${var.atmos_env}-deployer"
+  role = "${aws_iam_role.deployer.name}"
+
+  policy = "${file("../templates/policy-deployer-permissions.json")}"
+}
+
+resource "aws_iam_account_password_policy" "strict" {
+  minimum_password_length        = 12
+  require_lowercase_characters   = true
+  require_numbers                = true
+  require_uppercase_characters   = true
+  require_symbols                = true
+  allow_users_to_change_password = true
 }

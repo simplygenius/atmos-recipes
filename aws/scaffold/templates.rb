@@ -1,17 +1,21 @@
-if ! config_present?("config/atmos.yml", 'recipes', 'atmos-scaffold')
-  insert_into_file "config/atmos.yml", "  - atmos-scaffold\n", :after => /^recipes:\n/
+if ! config_present?('config/atmos.yml', 'recipes', 'atmos-scaffold')
+  add_config 'config/atmos.yml', 'recipes', ['atmos-scaffold']
 end
 
-if ! config_present?("config/atmos.yml", 'org')
-  insert_into_file "config/atmos.yml", :after => /^org:$/ do
-    val = ask "Input a short name that represents your organization:"
-    " #{val}"
-  end
+if ! config_present?('config/atmos.yml', 'recipes', 'atmos-support')
+  add_config 'config/atmos.yml', 'recipes', ['atmos-support']
 end
 
-if ! config_present?("config/atmos.yml", 'environments.ops.account_id')
-  insert_into_file "config/atmos.yml", :after => /^environments:\n\s+ops:\n\s+account_id:$/ do
-    val = ask "Input the AWS account id for the ops environment:"
-    " #{val}"
-  end
+if ! config_present?('config/atmos.yml', 'environments.ops.recipes', 'atmos-scaffold')
+  add_config 'config/atmos.yml', 'environments.ops.recipes', ['atmos-scaffold']
+end
+
+if ! config_present?('config/atmos.yml', 'org')
+  val = ask 'Input a short name that represents your organization:'
+  add_config 'config/atmos.yml', 'org', val
+end
+
+if ! config_present?('config/atmos.yml', 'environments.ops.account_id')
+  val = ask 'Input the AWS account id for the ops environment:'
+  add_config 'config/atmos.yml', 'environments.ops.account_id', val
 end

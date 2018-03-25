@@ -1,0 +1,5 @@
+description: AWS Load Balancers
+dependent_templates:
+  - aws/scaffold
+  - aws/vpc
+  - aws/dns
