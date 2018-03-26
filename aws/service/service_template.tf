@@ -1,4 +1,4 @@
-<% if rds -%>
+<%- if rds -%>
 variable "service_db_password_<%= name %>" {
   // Should be overriden in secrets
   default = "<%= name.length >= 8 ? name : "#{name}secret!" %>"
@@ -26,9 +26,21 @@ module "service-rds-<%= name %>" {
 
   cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
 }
-<% end -%>
 
-<% if lb -%>
+resource "aws_security_group_rule" "service-rds-ingress-<%= name %>" {
+  security_group_id = "${module.service-rds-<%= name %>.security_group_id}"
+
+  type = "ingress"
+  from_port = "${module.service-rds-<%= name %>.port}"
+  to_port = "${module.service-rds-<%= name %>.port}"
+  protocol = "tcp"
+
+  cidr_blocks = ["${var.vpc_cidr}"]
+}
+
+<%- end -%>
+
+<%- if lb -%>
 module "service-alb-<%= name %>" {
   source = "../modules/alb"
 
@@ -56,11 +68,11 @@ resource "aws_security_group_rule" "service-alb-http-ingress-<%= name %>" {
   to_port = 80
   protocol = "tcp"
 
-  <% if external -%>
+  <%- if external -%>
   cidr_blocks = ["0.0.0.0/0"]
-  <% else -%>
+  <%- else -%>
   cidr_blocks = ["${var.vpc_cidr}"]
-  <% end -%>
+  <%- end -%>
 }
 
 resource "aws_security_group_rule" "service-alb-https-ingress-<%= name %>" {
@@ -71,11 +83,11 @@ resource "aws_security_group_rule" "service-alb-https-ingress-<%= name %>" {
   to_port = 443
   protocol = "tcp"
 
-  <% if external -%>
+  <%- if external -%>
   cidr_blocks = ["0.0.0.0/0"]
-  <% else -%>
+  <%- else -%>
   cidr_blocks = ["${var.vpc_cidr}"]
-  <% end -%>
+  <%- end -%>
 }
 
 resource "aws_security_group_rule" "service-alb-ecs-egress-<%= name %>" {
@@ -89,7 +101,7 @@ resource "aws_security_group_rule" "service-alb-ecs-egress-<%= name %>" {
   cidr_blocks = ["${var.vpc_cidr}"]
 }
 
-<% end -%>
+<%- end -%>
 
 // TODO: private dns entry when external service or make alb module do it
 //resource "aws_route53_record" "service-alb-<%= name %>-internal" {
@@ -128,9 +140,9 @@ module "service-<%= name %>" {
   ecs_cluster_arn = "${aws_ecs_cluster.services.arn}"
 
   integrate_with_lb = <%= lb ? 1 : 0 %>
-  <% if lb -%>
+  <%- if lb -%>
   alb_target_group_id = "${module.service-alb-<%= name %>.alb_target_group_id}"
-  <% end -%>
+  <%- end -%>
 
   cpu = 256
   memory = 512
