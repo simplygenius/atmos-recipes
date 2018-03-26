@@ -2,12 +2,12 @@ if ! config_present?('config/atmos.yml', 'recipes', 'service-cluster')
   add_config 'config/atmos.yml', 'recipes', ['service-cluster']
 end
 
-name = ask('Input the service name (empty to skip):')
+name = ask('Input the service name (empty to skip): ')
 if name.present?
-  rds = ask('Does the service need a RDS database?', limited_to: ['y', 'n']) =~ /^y/i
-  lb = ask('Does the service need a load balancer?', limited_to: ['y', 'n']) =~ /^y/i
+  rds = agree('Does the service need a RDS database? ') {|q| q.default = 'y' }
+  lb = agree('Does the service need a load balancer? ') {|q| q.default = 'y' }
   if lb
-    external = ask('Should the Load Balancer be internet facing?', limited_to: ['y', 'n']) =~ /^y/i
+    external = agree('Should the Load Balancer be internet facing? ') {|q| q.default = 'y' }
   end
 
   template('aws/service/service_template.tf', "recipes/service-#{name}.tf", context: binding)
@@ -21,6 +21,7 @@ if name.present?
     
       Before applying, you should generate a database password and add it to
       secrets: atmos secret set #{name}_db_password <your_password>
+
     EOF
   end
 
