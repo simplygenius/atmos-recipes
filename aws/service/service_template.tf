@@ -35,7 +35,7 @@ resource "aws_security_group_rule" "service-rds-ingress-<%= name %>" {
   to_port = "${module.service-rds-<%= name %>.port}"
   protocol = "tcp"
 
-  cidr_blocks = ["${var.vpc_cidr}"]
+  source_security_group_id = "${module.service-<%= name %>.security_group_id}"
 }
 
 <%- end -%>
@@ -98,7 +98,7 @@ resource "aws_security_group_rule" "service-alb-ecs-egress-<%= name %>" {
   to_port = 65535
   protocol = "tcp"
 
-  cidr_blocks = ["${var.vpc_cidr}"]
+  source_security_group_id = "${module.service-<%= name %>.security_group_id}"
 }
 
 <%- end -%>
@@ -190,7 +190,7 @@ resource "aws_security_group_rule" "service-ecs-ingress-<%= name %>" {
   to_port = 65535
   protocol = "tcp"
 
-  cidr_blocks = ["${var.vpc_cidr}"]
+  source_security_group_id = "${module.service-alb-<%= name %>.security_group_id}"
 }
 
 resource "aws_security_group_rule" "service-ecs-egress-<%= name %>" {
