@@ -19,7 +19,7 @@ resource "aws_acm_certificate" "primary" {
   validation_method = "DNS"
 
   provisioner "local-exec" {
-    command = "printf '${local.ns_ipc}' | $ATMOS_IPC_CLIENT"
+    command = "$ATMOS_IPC_CLIENT '${local.ns_ipc}'"
     on_failure = "continue"
   }
 
