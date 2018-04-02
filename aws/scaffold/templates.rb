@@ -1,13 +1,19 @@
-if ! config_present?('config/atmos.yml', 'recipes', 'atmos-scaffold')
-  add_config 'config/atmos.yml', 'recipes', ['atmos-scaffold']
+if ! config_present?('config/atmos.yml', 'bootstrap_recipes',
+                     ['atmos-variables', 'atmos-bootstrap'])
+  add_config 'config/atmos.yml', 'bootstrap_recipes',
+             ['atmos-variables', 'atmos-bootstrap']
 end
 
-if ! config_present?('config/atmos.yml', 'recipes', 'atmos-support')
-  add_config 'config/atmos.yml', 'recipes', ['atmos-support']
+if ! config_present?('config/atmos.yml', 'recipes',
+                     ['atmos-variables', 'atmos-permissions', 'atmos-support'])
+  add_config 'config/atmos.yml', 'recipes',
+             ['atmos-variables', 'atmos-permissions', 'atmos-support']
 end
 
-if ! config_present?('config/atmos.yml', 'environments.ops.recipes', 'atmos-scaffold')
-  add_config 'config/atmos.yml', 'environments.ops.recipes', ['atmos-scaffold']
+if ! config_present?('config/atmos.yml', 'environments.ops.recipes',
+                     ['atmos-variables', 'atmos-permissions'])
+  add_config 'config/atmos.yml', 'environments.ops.recipes',
+             ['atmos-variables', 'atmos-permissions']
 end
 
 if ! config_present?('config/atmos.yml', 'org')

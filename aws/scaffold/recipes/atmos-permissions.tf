@@ -1,200 +1,3 @@
-variable "atmos_env" {
-  description = "The atmos atmos_env, value supplied by atmos runtime"
-}
-
-variable "account_ids" {
-  description = "Maps atmos_envs to account numbers, value supplied by atmos runtime"
-  type = "map"
-}
-
-variable "atmos_config" {
-  description = <<-EOF
-    The atmos config hash, value supplied by atmos runtime.  Convenience to allow
-    retrieving atmos configuration without having to define additional variable
-    resources
-  EOF
-  type = "map"
-}
-
-variable "global_name_prefix" {
-  description = "The prefix used to disambiguate global resource names, value supplied by atmos.yml"
-}
-
-variable "local_name_prefix" {
-  description = "The prefix used to disambiguate local resource names, value supplied by atmos.yml"
-}
-
-variable "region" {
-  description = "The aws region, value supplied by atmos.yml"
-}
-
-variable "backend_bucket" {
-  description = "The bucket for storing backend state, value supplied by atmos.yml"
-}
-
-variable "backend_dynamodb_table" {
-  description = "The dynamodb table for locking backend state, value supplied by atmos.yml"
-}
-
-variable "secret_bucket" {
-  description = "The bucket for storing secrets, value supplied by atmos.yml"
-}
-
-variable "force_destroy_buckets" {
-  description = <<-EOF
-    Allows destruction of s3 buckets that have contents.  Set to true for
-    error-free destroys, but should be false for day to day usage.  Note you
-    need to apply with it set to true in order for it to take effect in a
-    destroy.  e.g.
-      TF_VAR_force_destroy_buckets=true atmos apply
-      TF_VAR_force_destroy_buckets=true atmos destroy
-  EOF
-  default = false
-}
-
-variable "ops_admins_env" {
-  description = <<-EOF
-    Members of the ops admin group will also have admin access to all other
-    environments
-  EOF
-  default = 1
-}
-
-locals {
-  ops_env = "ops"
-  ops_account = "${lookup(var.account_ids, local.ops_env)}"
-  envs_without_ops = "${compact(split(",", replace(join(",", keys(var.account_ids)), local.ops_env, "")))}"
-}
-
-resource "null_resource" "bootstrap-ops" {
-  count = "${var.atmos_env == local.ops_env ? 1 : 0}"
-
-  triggers {
-    state_bucket = "${aws_s3_bucket.backend.id}"
-    state_lock_table = "${aws_dynamodb_table.backend-lock-table.id}"
-    secret_bucket = "${aws_s3_bucket.secret.id}"
-    env_admin_role = "${aws_iam_role_policy.env-admin.id}"
-    env_admin_policy = "${join(",", aws_iam_group_policy.env-admin.*.id)}",
-    bootstrap_admin_policy = "${join(",", aws_iam_group_policy.ops-bootstrap-admin.*.id)}",
-    all_user_policy = "${aws_iam_group_policy.self-management.id}"
-  }
-}
-
-resource "null_resource" "bootstrap-env" {
-  count = "${var.atmos_env == local.ops_env ? 0 : 1}"
-
-  triggers {
-    state_bucket = "${aws_s3_bucket.backend.id}"
-    state_lock_table = "${aws_dynamodb_table.backend-lock-table.id}"
-    secret_bucket = "${aws_s3_bucket.secret.id}"
-    env_admin_role = "${aws_iam_role_policy.env-admin.id}"
-  }
-}
-
-provider "aws" {
-  version = "1.9.0"
-  region = "${var.region}"
-}
-
-data "template_file" "policy-backend-bucket" {
-  vars {
-    bucket = "${var.backend_bucket}"
-  }
-
-  template = "${file("../templates/policy-backend-bucket.tmpl.json")}"
-}
-
-resource "aws_s3_bucket" "backend" {
-  bucket = "${var.backend_bucket}"
-  acl = "private"
-  force_destroy = "${var.force_destroy_buckets}"
-
-  versioning {
-    enabled = true
-  }
-
-  policy = "${data.template_file.policy-backend-bucket.rendered}"
-
-  tags {
-    Env = "${var.atmos_env}"
-    Source = "atmos"
-  }
-}
-
-resource "aws_dynamodb_table" "backend-lock-table" {
-  name = "${var.backend_dynamodb_table}"
-  read_capacity  = 1
-  write_capacity = 1
-  hash_key       = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  tags {
-    Env = "${var.atmos_env}"
-    Source = "atmos"
-  }
-}
-
-data "template_file" "policy-secret-bucket" {
-  vars {
-    bucket = "${var.secret_bucket}"
-  }
-
-  template = "${file("../templates/policy-secret-bucket.tmpl.json")}"
-}
-
-resource "aws_kms_key" "secret" {
-  description = "Key for encrypting secrets"
-  enable_key_rotation = true
-
-  tags {
-    Env = "${var.atmos_env}"
-    Source = "atmos"
-  }
-}
-
-resource "aws_s3_bucket" "secret" {
-  bucket = "${var.secret_bucket}"
-  acl = "private"
-  force_destroy = "${var.force_destroy_buckets}"
-
-  versioning {
-    enabled = true
-  }
-
-  policy = "${data.template_file.policy-secret-bucket.rendered}"
-
-  tags {
-    Env = "${var.atmos_env}"
-    Source = "atmos"
-  }
-}
-
-data "template_file" "policy-assume-env-role" {
-  vars {
-    ops_account = "${local.ops_account}"
-    require_mfa = true
-  }
-
-  template = "${file("../templates/policy-assume-env-role.tmpl.json")}"
-}
-
-resource "aws_iam_role" "env-admin" {
-  name  = "${var.atmos_env}-admin"
-  path  = "/"
-
-  assume_role_policy = "${data.template_file.policy-assume-env-role.rendered}"
-}
-
-resource "aws_iam_role_policy" "env-admin" {
-  name = "${var.atmos_env}-admin"
-  role = "${aws_iam_role.env-admin.name}"
-
-  policy = "${file("../templates/policy-allow-all.json")}"
-}
 
 resource "aws_iam_group" "env-admin" {
   count = "${var.atmos_env == local.ops_env ? length(var.account_ids) : 0}"
@@ -242,6 +45,8 @@ resource "aws_iam_group_policy" "ops-bootstrap-admin" {
   name = "allow-bootstrap-assume-role-to-${local.envs_without_ops[count.index]}"
   group = "ops-admin"
   policy = "${data.template_file.policy-allow-assume-env-role-for-bootstrap.*.rendered[count.index]}"
+
+  depends_on = ["aws_iam_group.env-admin"]
 }
 
 // A convenience to allow members of the ops admin group to also admin all
@@ -264,6 +69,8 @@ resource "aws_iam_group_policy" "ops-env-admin" {
   name = "allow-assume-role-to-${local.envs_without_ops[count.index]}-for-ops"
   group = "ops-admin"
   policy = "${data.template_file.policy-allow-assume-env-role-to-env-for-ops.*.rendered[count.index]}"
+
+  depends_on = ["aws_iam_group.env-admin"]
 }
 
 resource "aws_iam_group" "all-users" {
@@ -346,7 +153,7 @@ resource "aws_iam_access_key" "deployer" {
 }
 
 // Set enabled=1 to display deployer keys to get them for your CI system
-module "test" {
+module "display-access-keys" {
   source = "../modules/atmos_ipc"
   action = "notify"
   enabled = "${0 * (var.atmos_env == local.ops_env ? 1 : 0)}"

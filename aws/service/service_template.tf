@@ -1,10 +1,17 @@
 <%- if rds -%>
-variable "service_db_password_<%= name %>" {
+variable "service_<%= name %>_db_password" {
   // Should be overriden in secrets
   default = "<%= name.length >= 8 ? name : "#{name}secret!" %>"
 }
 
-module "service-rds-<%= name %>" {
+module "service-<%= name %>-secret-access" {
+  source = "../modules/secret_access"
+  secret_bucket = "${var.secret_bucket}"
+  role = "${module.service-<%= name %>.task_role}"
+  keys = ["service_<%= name %>_db_password"]
+}
+
+module "service-<%= name %>-rds" {
   source = "../modules/rds"
 
   atmos_env = "${var.atmos_env}"
@@ -18,7 +25,7 @@ module "service-rds-<%= name %>" {
 
   db_name = "<%= name %>"
   db_username = "<%= name %>"
-  db_password = "${var.service_db_password_<%= name %>}"
+  db_password = "${var.service_<%= name %>_db_password}"
 
   vpc_id = "${module.vpc.vpc_id}"
   subnet_ids = "${module.vpc.private_subnet_ids}"
@@ -27,12 +34,12 @@ module "service-rds-<%= name %>" {
   cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
 }
 
-resource "aws_security_group_rule" "service-rds-ingress-<%= name %>" {
-  security_group_id = "${module.service-rds-<%= name %>.security_group_id}"
+resource "aws_security_group_rule" "service-<%= name %>-rds-ingress" {
+  security_group_id = "${module.service-<%= name %>-rds.security_group_id}"
 
   type = "ingress"
-  from_port = "${module.service-rds-<%= name %>.port}"
-  to_port = "${module.service-rds-<%= name %>.port}"
+  from_port = "${module.service-<%= name %>-rds.port}"
+  to_port = "${module.service-<%= name %>-rds.port}"
   protocol = "tcp"
 
   source_security_group_id = "${module.service-<%= name %>.security_group_id}"
@@ -41,7 +48,7 @@ resource "aws_security_group_rule" "service-rds-ingress-<%= name %>" {
 <%- end -%>
 
 <%- if lb -%>
-module "service-alb-<%= name %>" {
+module "service-<%= name %>-alb" {
   source = "../modules/alb"
 
   atmos_env = "${var.atmos_env}"
@@ -60,8 +67,8 @@ module "service-alb-<%= name %>" {
   cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
 }
 
-resource "aws_security_group_rule" "service-alb-http-ingress-<%= name %>" {
-  security_group_id = "${module.service-alb-<%= name %>.security_group_id}"
+resource "aws_security_group_rule" "service-<%= name %>-alb-http-ingress" {
+  security_group_id = "${module.service-<%= name %>-alb.security_group_id}"
 
   type = "ingress"
   from_port = 80
@@ -75,8 +82,8 @@ resource "aws_security_group_rule" "service-alb-http-ingress-<%= name %>" {
   <%- end -%>
 }
 
-resource "aws_security_group_rule" "service-alb-https-ingress-<%= name %>" {
-  security_group_id = "${module.service-alb-<%= name %>.security_group_id}"
+resource "aws_security_group_rule" "service-<%= name %>-alb-https-ingress" {
+  security_group_id = "${module.service-<%= name %>-alb.security_group_id}"
 
   type = "ingress"
   from_port = 443
@@ -90,8 +97,8 @@ resource "aws_security_group_rule" "service-alb-https-ingress-<%= name %>" {
   <%- end -%>
 }
 
-resource "aws_security_group_rule" "service-alb-ecs-egress-<%= name %>" {
-  security_group_id = "${module.service-alb-<%= name %>.security_group_id}"
+resource "aws_security_group_rule" "service-<%= name %>-alb-ecs-egress" {
+  security_group_id = "${module.service-<%= name %>-alb.security_group_id}"
 
   type = "egress"
   from_port = 0
@@ -104,14 +111,14 @@ resource "aws_security_group_rule" "service-alb-ecs-egress-<%= name %>" {
 <%- end -%>
 
 // TODO: private dns entry when external service or make alb module do it
-//resource "aws_route53_record" "service-alb-<%= name %>-internal" {
+//resource "aws_route53_record" "service-<%= name %>-alb-internal" {
 //  zone_id = "${module.dns.private_zone_id}"
 //  name = "<%= name %>"
 //  type = "A"
 //
 //  alias {
-//    name = "${module.service-alb-<%= name %>.alb_dns_name}"
-//    zone_id = "${module.service-alb-<%= name %>.alb_zone_id}"
+//    name = "${module.service-<%= name %>-alb.alb_dns_name}"
+//    zone_id = "${module.service-<%= name %>-alb.alb_zone_id}"
 //    evaluate_target_health = true
 //  }
 //}
@@ -141,7 +148,7 @@ module "service-<%= name %>" {
 
   integrate_with_lb = <%= lb ? 1 : 0 %>
   <%- if lb -%>
-  alb_target_group_id = "${module.service-alb-<%= name %>.alb_target_group_id}"
+  alb_target_group_id = "${module.service-<%= name %>-alb.alb_target_group_id}"
   <%- end -%>
 
   cpu = 256
@@ -161,11 +168,13 @@ module "service-<%= name %>" {
         "environment" : [
             { "name" : "ATMOS_ENV", "value" : "${var.atmos_env}" },
 <% if rds %>
-            { "name" : "DB_HOST", "value" : "${module.service-rds-<%= name %>.hostname}" },
-            { "name" : "DB_PORT", "value" : "${module.service-rds-<%= name %>.port}" },
-            { "name" : "DB_NAME", "value" : "${module.service-rds-<%= name %>.database}" },
-            { "name" : "DB_USER", "value" : "${module.service-rds-<%= name %>.username}" },
-            { "name" : "DB_PASS", "value" : "${module.service-rds-<%= name %>.password}" },
+            { "name" : "DB_HOST", "value" : "${module.service-<%= name %>-rds.hostname}" },
+            { "name" : "DB_PORT", "value" : "${module.service-<%= name %>-rds.port}" },
+            { "name" : "DB_NAME", "value" : "${module.service-<%= name %>-rds.database}" },
+            { "name" : "DB_USER", "value" : "${module.service-<%= name %>-rds.username}" },
+            { "name" : "ATMOS_SECRET_BUCKET", "value" : "${var.secret_bucket}" },
+            { "name" : "ATMOS_SECRET_KEYS", "value" : "DB_PASS=service_<%= name %>_db_password" },
+
 <% end %>
             { "name" : "APP_PORT", "value" : "$${port}" }
         ],
@@ -182,7 +191,7 @@ module "service-<%= name %>" {
 TMPL
 }
 
-resource "aws_security_group_rule" "service-ecs-ingress-<%= name %>" {
+resource "aws_security_group_rule" "service-<%= name %>-ecs-ingress" {
   security_group_id = "${module.service-<%= name %>.security_group_id}"
 
   type = "ingress"
@@ -190,10 +199,10 @@ resource "aws_security_group_rule" "service-ecs-ingress-<%= name %>" {
   to_port = 65535
   protocol = "tcp"
 
-  source_security_group_id = "${module.service-alb-<%= name %>.security_group_id}"
+  source_security_group_id = "${module.service-<%= name %>-alb.security_group_id}"
 }
 
-resource "aws_security_group_rule" "service-ecs-egress-<%= name %>" {
+resource "aws_security_group_rule" "service-<%= name %>-ecs-egress" {
   security_group_id = "${module.service-<%= name %>.security_group_id}"
 
   type = "egress"

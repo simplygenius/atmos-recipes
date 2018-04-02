@@ -20,7 +20,8 @@ if name.present?
     say <<~EOF
     
       Before applying, you should generate a database password and add it to
-      secrets: atmos secret set #{name}_db_password <your_password>
+      secrets for each env:
+      atmos -e <env> secret set service_#{name}_db_password <your_password>
 
     EOF
   end

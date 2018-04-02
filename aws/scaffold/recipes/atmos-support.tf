@@ -1,11 +1,7 @@
-variable "ops_alerts_topic" {
-  description = "The sns topic name for ops alerts"
-  default = "ops-alerts"
-}
-
 locals {
   logs_bucket = "${var.global_name_prefix}logs"
   backup_bucket = "${var.global_name_prefix}backup"
+
   ops_alerts_topic_arn = "arn:aws:sns:${var.region}:${var.account_ids[var.atmos_env]}:${var.local_name_prefix}${var.ops_alerts_topic}"
 
   subscribe_topic_msg = <<-EOF
@@ -16,7 +12,7 @@ ${var.local_name_prefix}${var.ops_alerts_topic}
 
   subscribe_topic_ipc = "${jsonencode(map(
     "action", "notify",
-    "message", local.subscribe_topic_msg,
+    "message", local.subscribe_topic_msg
   ))}"
 }
 
@@ -27,7 +23,7 @@ resource "aws_sns_topic" "ops-alerts" {
   display_name = "Ops Alerts"
 
   provisioner "local-exec" {
-    command = "printf '${local.subscribe_topic_ipc}' | $ATMOS_IPC_CLIENT"
+    command = "$ATMOS_IPC_CLIENT '${local.subscribe_topic_ipc}'"
     on_failure = "continue"
   }
 }
