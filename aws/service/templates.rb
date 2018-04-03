@@ -1,5 +1,5 @@
-if ! config_present?('config/atmos.yml', 'recipes', 'service-cluster')
-  add_config 'config/atmos.yml', 'recipes', ['service-cluster']
+if ! config_present?('config/atmos.yml', 'recipes.default', 'service-cluster')
+  add_config 'config/atmos.yml', 'recipes.default', ['service-cluster']
 end
 
 name = ask('Input the service name (empty to skip): ')
@@ -12,8 +12,8 @@ if name.present?
 
   template('aws/service/service_template.tf', "recipes/service-#{name}.tf", context: binding)
 
-  if ! config_present?('config/atmos.yml', 'recipes', "service-#{name}")
-    add_config 'config/atmos.yml', 'recipes', ["service-#{name}"]
+  if ! config_present?('config/atmos.yml', 'recipes.default', "service-#{name}")
+    add_config 'config/atmos.yml', 'recipes.default', ["service-#{name}"]
   end
 
   if rds

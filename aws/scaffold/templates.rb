@@ -1,18 +1,24 @@
-if ! config_present?('config/atmos.yml', 'bootstrap_recipes',
+if ! config_present?('config/atmos.yml', 'recipes.bootstrap',
                      ['atmos-variables', 'atmos-bootstrap'])
-  add_config 'config/atmos.yml', 'bootstrap_recipes',
+  add_config 'config/atmos.yml', 'recipes.bootstrap',
              ['atmos-variables', 'atmos-bootstrap']
 end
 
-if ! config_present?('config/atmos.yml', 'recipes',
+if ! config_present?('config/atmos.yml', 'recipes.default',
                      ['atmos-variables', 'atmos-permissions', 'atmos-support'])
-  add_config 'config/atmos.yml', 'recipes',
+  add_config 'config/atmos.yml', 'recipes.default',
              ['atmos-variables', 'atmos-permissions', 'atmos-support']
 end
 
-if ! config_present?('config/atmos.yml', 'environments.ops.recipes',
+if ! config_present?('config/atmos.yml', 'environments.ops.recipes.bootstrap',
+                     ['atmos-variables', 'atmos-bootstrap'])
+  add_config 'config/atmos.yml', 'environments.ops.recipes.bootstrap',
+             ['atmos-variables', 'atmos-bootstrap']
+end
+
+if ! config_present?('config/atmos.yml', 'environments.ops.recipes.default',
                      ['atmos-variables', 'atmos-permissions'])
-  add_config 'config/atmos.yml', 'environments.ops.recipes',
+  add_config 'config/atmos.yml', 'environments.ops.recipes.default',
              ['atmos-variables', 'atmos-permissions']
 end
 

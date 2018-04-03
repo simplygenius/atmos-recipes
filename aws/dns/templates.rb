@@ -1,5 +1,5 @@
-if ! config_present?('config/atmos.yml', 'recipes', 'dns')
-  add_config 'config/atmos.yml', 'recipes', ['dns']
+if ! config_present?('config/atmos.yml', 'recipes.default', 'dns')
+  add_config 'config/atmos.yml', 'recipes.default', ['dns']
 end
 
 if ! config_present?('config/atmos/dns.yml', 'domain')
