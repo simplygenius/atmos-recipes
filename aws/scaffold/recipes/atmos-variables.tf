@@ -2,6 +2,15 @@ variable "atmos_env" {
   description = "The atmos atmos_env, value supplied by atmos runtime"
 }
 
+variable "all_env_names" {
+  description = <<-EOF
+    All the atmos environment names in the order they appear in yml file so
+    that adding environments doesn't cause transient permission breakages,
+    value supplied by atmos runtime
+  EOF
+  type = "list"
+}
+
 variable "account_ids" {
   description = "Maps atmos_envs to account numbers, value supplied by atmos runtime"
   type = "map"
@@ -68,7 +77,7 @@ variable "ops_alerts_topic" {
 locals {
   ops_env = "ops"
   ops_account = "${lookup(var.account_ids, local.ops_env)}"
-  envs_without_ops = "${compact(split(",", replace(join(",", keys(var.account_ids)), local.ops_env, "")))}"
+  envs_without_ops = "${compact(split(",", replace(join(",", var.all_env_names), local.ops_env, "")))}"
 }
 
 provider "aws" {
