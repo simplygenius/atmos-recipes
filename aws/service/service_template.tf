@@ -176,7 +176,7 @@ module "service-<%= name %>" {
             { "name" : "ATMOS_SECRET_KEYS", "value" : "DB_PASS=service_<%= name %>_db_password" },
 
 <% end %>
-            { "name" : "SVC_NAME", "value" : "$${name}" }
+            { "name" : "SVC_NAME", "value" : "$${name}" },
             { "name" : "SVC_PORT", "value" : "$${port}" }
         ],
         "logConfiguration": {
