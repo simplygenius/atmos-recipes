@@ -9,4 +9,4 @@ dependent_templates:
 optional:
   # Always ignore since we template it through ERB to produce the recipe based
   # on the service name
-  service_template.tf: "true"
+  service_template.tf: "false"
