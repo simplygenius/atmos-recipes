@@ -14,7 +14,7 @@ providers:
       key: "terraform.tfstate"
       region: "#{region}"
       encrypt: true
-      dynamodb_table: "#{local_name_prefix}AtmosTerraformLock"
+      dynamodb_table: "#{global_name_prefix}atmos-terraform-lock"
     secret:
       type: s3
       bucket: "#{global_name_prefix}secrets"
