@@ -4,7 +4,7 @@ end
 
 if ! config_present?('config/atmos/dns.yml', 'domain')
   val = ask "Input the primary domain name for your organization: "
-  add_config 'config/atmos/dns.yml', 'domain', val
+  add_config 'config/atmos/dns.yml', 'domain', "\#{atmos_env}.#{val}"
 end
 
 # TODO: add domain registration using Aws::Route53Domains::Client
