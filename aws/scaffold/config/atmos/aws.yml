@@ -20,3 +20,5 @@ providers:
       bucket: "#{global_name_prefix}secrets"
       region: "#{region}"
       encrypt: true
+
+force_destroy_buckets: "#{is_dev}"
