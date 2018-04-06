@@ -43,7 +43,7 @@ resource "aws_db_instance" "main" {
   multi_az = "${var.multi_az}"
   backup_retention_period = "${var.backup_retention_period}"
   final_snapshot_identifier = "${var.local_name_prefix}${var.name}-final"
-  skip_final_snapshot = false
+  skip_final_snapshot = "${var.skip_final_snapshot}"
 
   username = "${var.db_username}"
   password = "${var.db_password}"

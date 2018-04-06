@@ -1,0 +1,1 @@
+skip_final_snapshot: "#{is_dev}"

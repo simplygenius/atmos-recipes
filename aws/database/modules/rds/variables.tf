@@ -109,6 +109,11 @@ variable "backup_retention_period" {
   default = 3
 }
 
+variable "skip_final_snapshot" {
+  description = "Flag to turn off the final snapshot on destruction"
+  default = false
+}
+
 variable "encrypted" {
   description = "Turn on database encryption"
   default = false
