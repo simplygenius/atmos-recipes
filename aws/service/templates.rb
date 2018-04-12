@@ -1,5 +1,5 @@
-if ! config_present?('config/atmos.yml', 'recipes.default', 'service-cluster')
-  add_config 'config/atmos.yml', 'recipes.default', ['service-cluster']
+if ! config_present?('config/atmos.yml', 'recipes.default', 'service')
+  add_config 'config/atmos.yml', 'recipes.default', ['service']
 end
 
 name = ask('Input the service name (empty to skip): ')
