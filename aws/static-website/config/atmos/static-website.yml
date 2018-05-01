@@ -1,0 +1,4 @@
+# Variables for the aws/website template
+#
+
+website_bucket: "#{global_name_prefix}www"
