@@ -21,7 +21,8 @@ module "wildcart-cert" {
   global_name_prefix = "${var.global_name_prefix}"
   local_name_prefix = "${var.local_name_prefix}"
 
-  domain = "*.${var.domain}"
+  domain = "${var.domain}"
+  alternative_names = ["*.${var.domain}"]
   zone_id = "${module.dns.public_zone_id}"
   zone_name_servers = "${module.dns.public_zone_name_servers}"
 }

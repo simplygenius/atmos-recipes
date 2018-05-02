@@ -22,6 +22,12 @@ variable "domain" {
   description = "The domain name to create a certificate for"
 }
 
+variable "alternative_names" {
+  description = "The other names to include in the certificate for domain"
+  type = "list"
+  default = []
+}
+
 variable "zone_id" {
   description = "The zone hosting the domain for the certificate"
 }
