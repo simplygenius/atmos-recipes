@@ -1,7 +1,4 @@
 locals {
-  logs_bucket = "${var.global_name_prefix}logs"
-  backup_bucket = "${var.global_name_prefix}backup"
-
   ops_alerts_topic_arn = "arn:aws:sns:${var.region}:${var.account_ids[var.atmos_env]}:${var.local_name_prefix}${var.ops_alerts_topic}"
 
   subscribe_topic_msg = <<-EOF
@@ -30,7 +27,7 @@ resource "aws_sns_topic" "ops-alerts" {
 
 data "template_file" "policy-logs-bucket" {
   vars {
-    bucket = "${local.logs_bucket}"
+    bucket = "${var.logs_bucket}"
     account_id = "${var.account_ids[var.atmos_env]}"
   }
 
@@ -38,7 +35,7 @@ data "template_file" "policy-logs-bucket" {
 }
 
 resource "aws_s3_bucket" "logs" {
-  bucket = "${local.logs_bucket}"
+  bucket = "${var.logs_bucket}"
   acl = "log-delivery-write"
   force_destroy = "${var.force_destroy_buckets}"
 
@@ -56,7 +53,7 @@ resource "aws_s3_bucket" "logs" {
 }
 
 resource "aws_s3_bucket" "backup" {
-  bucket = "${local.backup_bucket}"
+  bucket = "${var.backup_bucket}"
   acl = "private"
   force_destroy = "${var.force_destroy_buckets}"
 }

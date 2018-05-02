@@ -21,4 +21,7 @@ providers:
       region: "#{region}"
       encrypt: true
 
+logs_bucket: "#{global_name_prefix}logs"
+backup_bucket: "#{global_name_prefix}backup"
+
 force_destroy_buckets: "#{is_dev}"

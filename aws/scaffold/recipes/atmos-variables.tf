@@ -49,6 +49,14 @@ variable "secret_bucket" {
   description = "The bucket for storing secrets, value supplied by atmos.yml"
 }
 
+variable "logs_bucket" {
+  description = "The bucket for storing logs, value supplied by atmos.yml"
+}
+
+variable "backup_bucket" {
+  description = "The bucket for storing backups, value supplied by atmos.yml"
+}
+
 variable "force_destroy_buckets" {
   description = <<-EOF
     Allows destruction of s3 buckets that have contents.  Set to true for
