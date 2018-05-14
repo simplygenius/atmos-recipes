@@ -55,9 +55,14 @@ variable "logs_bucket" {
   description = "The bucket to hold website access logs"
 }
 
-variable "redirect_aliases" {
+variable "enable_redirects" {
   description = "Adds an http redirect for secondary aliases (1..-1) to the primary alias (0)"
-  default = 0
+  default = 1
+}
+
+variable "enable_deep_default_objects" {
+  description = "Allows requests to subdirectories to get rewritten to the subdir/index_page"
+  default = 1
 }
 
 variable "cdn_allowed_methods" {

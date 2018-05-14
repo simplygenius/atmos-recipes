@@ -11,7 +11,6 @@ module "static-website-www" {
 
   name = "www"
   aliases = ["${var.domain}", "www.${var.domain}"]
-  redirect_aliases = 1
 
   zone_id = "${module.dns.public_zone_id}"
   certificate_arn = "${module.wildcart-cert.certificate_arn}"
@@ -20,27 +19,17 @@ module "static-website-www" {
   force_destroy_buckets = "${var.force_destroy_buckets}"
 }
 
+data "template_file" "policy-deploy-static-website" {
+  vars {
+    site_bucket_arn = "${module.static-website-www.site_bucket_arn}"
+  }
+
+  template = "${file("../templates/policy-deploy-static-website.tmpl.json")}"
+}
+
 resource "aws_iam_role_policy" "website-deploy-s3-access" {
   name = "${var.local_name_prefix}website-deploy-s3-access"
   role = "${aws_iam_role.deployer.name}"
 
-  policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject*",
-        "s3:PutObject*",
-        "s3:List*"
-      ],
-      "Resource": [
-        "${module.static-website-www.site_bucket_arn}",
-        "${module.static-website-www.site_bucket_arn}/*"
-      ]
-    }
-  ]
-}
-POLICY
+  policy = "${data.template_file.policy-deploy-static-website.rendered}"
 }

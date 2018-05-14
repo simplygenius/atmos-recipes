@@ -4,8 +4,6 @@ locals {
 
   primary_alias = "${var.aliases[0]}"
   secondary_aliases = "${slice(var.aliases, 1, length(var.aliases))}"
-  redirect_aliases = "${compact(split(",", signum(var.redirect_aliases) == 1 ? join(",", local.secondary_aliases) : ""))}"
-  cdn_aliases = "${compact(split(",", signum(var.redirect_aliases) == 1 ? local.primary_alias : join(",", var.aliases)))}"
 }
 
 resource "aws_cloudfront_origin_access_identity" "site" {
@@ -16,7 +14,7 @@ resource "aws_cloudfront_distribution" "site" {
   enabled = true
   is_ipv6_enabled = true
   price_class = "${var.price_class}"
-  aliases = "${local.cdn_aliases}"
+  aliases = "${var.aliases}"
   default_root_object = "${var.index_page}"
 
   origin {
@@ -53,6 +51,11 @@ resource "aws_cloudfront_distribution" "site" {
       }
     }
 
+    lambda_function_association {
+      event_type = "viewer-request"
+      lambda_arn = "${aws_lambda_function.site-redirects.qualified_arn}"
+    }
+
     viewer_protocol_policy = "redirect-to-https"
     min_ttl = 0
     default_ttl = 3600
@@ -79,11 +82,69 @@ resource "aws_cloudfront_distribution" "site" {
   }
 }
 
+
+resource "aws_iam_role" "site-redirects-lambda" {
+  name = "${var.local_name_prefix}${var.name}-site-redirects"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [
+          "lambda.amazonaws.com",
+          "edgelambda.amazonaws.com"
+        ]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "site-redirects-lambda" {
+  role = "${aws_iam_role.site-redirects-lambda.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+data "template_file" "site-redirects-lambda" {
+  template = "${file("${path.module}/lambda-redirect.tmpl.js")}"
+
+  vars {
+    primary_alias = "${local.primary_alias}"
+    default_root_object = "${var.index_page}"
+    enable_deep_default_objects = "${var.enable_deep_default_objects == 1 ? "true" : "false"}"
+    enable_redirects = "${var.enable_redirects == 1 ? "true" : "false"}"
+  }
+}
+
+data "archive_file" "site-redirects-lambda" {
+  type = "zip"
+
+  source_content = "${data.template_file.site-redirects-lambda.rendered}"
+  source_content_filename = "main.js"
+  output_path = "${path.root}/tmp/lambda-redirect.zip"
+}
+
+resource "aws_lambda_function" "site-redirects" {
+  function_name = "${var.local_name_prefix}${var.name}_cdn_redirect"
+  filename = "${data.archive_file.site-redirects-lambda.output_path}"
+  source_code_hash = "${data.archive_file.site-redirects-lambda.output_base64sha256}"
+  publish = true
+
+  role = "${aws_iam_role.site-redirects-lambda.arn}"
+  handler = "main.handler"
+  runtime = "nodejs8.10"
+}
+
 resource "aws_route53_record" "site" {
-  count = "${length(local.cdn_aliases)}"
+  count = "${length(var.aliases)}"
 
   zone_id = "${var.zone_id}"
-  name = "${local.cdn_aliases[count.index]}"
+  name = "${var.aliases[count.index]}"
   type = "A"
 
   alias {
@@ -133,119 +194,4 @@ resource "aws_s3_bucket" "site" {
   }
 
   policy = "${data.aws_iam_policy_document.site-cloudfront-s3-access.json}"
-}
-
-//resource "aws_s3_bucket" "alias_redirects" {
-//  count = "${length(local.redirect_aliases)}"
-//
-//  bucket = "${local.redirect_aliases[count.index]}"
-//  acl = "public-read"
-//
-//  website {
-//    redirect_all_requests_to = "https://${local.primary_alias}"
-//  }
-//}
-//
-//resource "aws_route53_record" "alias_redirects" {
-//  zone_id = "${var.zone_id}"
-//  name = "${local.redirect_aliases[count.index]}"
-//  type = "A"
-//
-//  alias {
-//    name = "${aws_s3_bucket.alias_redirects.website_domain}"
-//    zone_id = "${aws_s3_bucket.alias_redirects.hosted_zone_id}"
-//    evaluate_target_health = true
-//  }
-//}
-
-resource "aws_s3_bucket" "alias_redirects" {
-  bucket = "${var.site_bucket}-redirects"
-  acl = "public-read"
-
-  website {
-    redirect_all_requests_to = "https://${local.primary_alias}"
-  }
-}
-
-resource "aws_route53_record" "alias_redirects" {
-  count = "${length(local.redirect_aliases)}"
-
-  zone_id = "${var.zone_id}"
-  name = "${local.redirect_aliases[count.index]}"
-  type = "A"
-
-  alias {
-    name = "${aws_cloudfront_distribution.alias_redirects.0.domain_name}"
-    zone_id = "${aws_cloudfront_distribution.alias_redirects.0.hosted_zone_id}"
-    evaluate_target_health = false
-  }
-}
-
-resource "aws_cloudfront_distribution" "alias_redirects" {
-  count = "${signum(var.redirect_aliases) == 1 ? 1 : 0}"
-
-  enabled = true
-  is_ipv6_enabled = true
-  price_class = "${var.price_class}"
-  aliases = "${local.redirect_aliases}"
-
-  origin {
-    domain_name = "${aws_s3_bucket.alias_redirects.website_endpoint}"
-    origin_id = "${local.redirect_origin_id}"
-
-    custom_origin_config {
-      origin_protocol_policy = "http-only"
-      http_port = 80
-      https_port = 443
-      origin_ssl_protocols = [
-        "TLSv1.2",
-        "TLSv1.1",
-        "TLSv1"
-      ]
-    }
-  }
-
-  logging_config {
-    include_cookies = false
-    bucket = "${var.logs_bucket}.s3.amazonaws.com"
-    prefix = "cdn-access-logs/${var.name}-redirects"
-  }
-
-  default_cache_behavior {
-    allowed_methods = "${var.cdn_allowed_methods}"
-    cached_methods = "${var.cdn_cached_methods}"
-    target_origin_id = "${local.redirect_origin_id}"
-
-    forwarded_values {
-      query_string = false
-
-      cookies {
-        forward = "none"
-      }
-    }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl = 0
-    default_ttl = 3600
-    max_ttl = 86400
-    compress = "${var.compress}"
-  }
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-
-  tags {
-    Name = "${var.local_name_prefix}${var.name}-redirects"
-    Environment = "${var.atmos_env}"
-    Source = "terraform"
-  }
-
-  viewer_certificate {
-    cloudfront_default_certificate = false
-    acm_certificate_arn = "${var.certificate_arn}"
-    ssl_support_method = "sni-only"
-  }
 }
