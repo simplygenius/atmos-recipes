@@ -22,6 +22,11 @@ variable "az_count" {
   description = "The number of AZs to use for redundancy"
 }
 
+variable "enable_nat" {
+  description = "Enable provisioning of NAT gateways for each subnet in the vpc"
+  default = 1
+}
+
 variable "vpc_tenancy" {
   description = "Instance tenancy for the VPC"
   default = "default"
@@ -110,6 +115,7 @@ data "template_file" "public_subnet_cidrs" {
 }
 
 locals {
+  nat_enablement = "${signum(var.enable_nat) == 1 ? 1 : 0}"
   private_subnet_cidrs = "${data.template_file.private_subnet_cidrs.*.rendered}"
   public_subnet_cidrs = "${data.template_file.public_subnet_cidrs.*.rendered}"
 }

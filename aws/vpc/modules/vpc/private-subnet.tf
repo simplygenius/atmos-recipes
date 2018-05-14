@@ -26,7 +26,7 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route" "private-nat" {
-  count = "${length(local.private_subnet_cidrs)}"
+  count = "${length(local.private_subnet_cidrs) * local.nat_enablement}"
 
   route_table_id = "${aws_route_table.private.*.id[count.index]}"
   destination_cidr_block = "0.0.0.0/0"
