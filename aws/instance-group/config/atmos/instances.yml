@@ -1,0 +1,17 @@
+# A map from instance group name to the keypair used for provisioning instances in that group
+instance_keypairs: {}
+instance_keypairs_default:
+
+# A map from instance group name to the number of instances min/max/desired in that group
+instance_counts: {}
+instance_counts_default: 1
+instance_min_count_scale_factor: 1
+instance_max_count_scale_factor: 1
+
+# A map from instance group name to the instance size desired for that group
+instance__sizes: {}
+instance_sizes_default: t2.tiny
+
+# A map from the instance group name to the image id to use to provision the instances in that group
+instance_images: {}
+instance_images_default:

@@ -1,0 +1,7 @@
+description: Template for instantiating an instance group from user input
+dependent_templates:
+  - aws/instance-group-dynamic
+optional:
+  # Always ignore since we template it through ERB to produce the recipe based
+  # on the instance group name
+  instance_group_template.tf: "false"

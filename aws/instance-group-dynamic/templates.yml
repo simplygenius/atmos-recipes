@@ -1,0 +1,5 @@
+description: Modules to define groups of instances that will scale dynamically
+dependent_templates:
+  - aws/scaffold
+  - aws/vpc
+  - aws/dns
