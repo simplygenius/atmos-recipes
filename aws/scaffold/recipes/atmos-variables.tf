@@ -37,16 +37,15 @@ variable "region" {
   description = "The aws region, value supplied by atmos.yml"
 }
 
-variable "backend_bucket" {
-  description = "The bucket for storing backend state, value supplied by atmos.yml"
+variable "backend" {
+  description = "The backend state configuration, value supplied by atmos.yml"
+  description = "The backend state configuration, value supplied by atmos.yml"
+  type = "map"
 }
 
-variable "backend_dynamodb_table" {
-  description = "The dynamodb table for locking backend state, value supplied by atmos.yml"
-}
-
-variable "secret_bucket" {
-  description = "The bucket for storing secrets, value supplied by atmos.yml"
+variable "secret" {
+  description = "The secrets configuration, value supplied by atmos.yml"
+  type = "map"
 }
 
 variable "logs_bucket" {

@@ -4,14 +4,14 @@
 
 data "template_file" "policy-backend-bucket" {
   vars {
-    bucket = "${var.backend_bucket}"
+    bucket = "${lookup(var.backend, "bucket")}"
   }
 
   template = "${file("../templates/policy-backend-bucket.tmpl.json")}"
 }
 
 resource "aws_s3_bucket" "backend" {
-  bucket = "${var.backend_bucket}"
+  bucket = "${lookup(var.backend, "bucket")}"
   acl = "private"
   force_destroy = "${var.force_destroy_buckets}"
 
@@ -29,7 +29,7 @@ resource "aws_s3_bucket" "backend" {
 
 data "template_file" "policy-secret-bucket" {
   vars {
-    bucket = "${var.secret_bucket}"
+    bucket = "${lookup(var.secret, "bucket")}"
   }
 
   template = "${file("../templates/policy-secret-bucket.tmpl.json")}"
@@ -38,7 +38,7 @@ data "template_file" "policy-secret-bucket" {
 // We want secret storage setup in bootstrap so that immediately after
 // bootstrap, we can apply a full environment that may have secrets
 resource "aws_s3_bucket" "secret" {
-  bucket = "${var.secret_bucket}"
+  bucket = "${lookup(var.secret, "bucket")}"
   acl = "private"
   force_destroy = "${var.force_destroy_buckets}"
 
@@ -55,7 +55,7 @@ resource "aws_s3_bucket" "secret" {
 }
 
 resource "aws_dynamodb_table" "backend-lock-table" {
-  name = "${var.backend_dynamodb_table}"
+  name = "${lookup(var.backend, "dynamodb_table")}"
   read_capacity  = 1
   write_capacity = 1
   hash_key       = "LockID"
