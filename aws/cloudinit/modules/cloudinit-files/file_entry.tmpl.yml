@@ -1,0 +1,5 @@
+  - path: ${path}
+    owner: ${owner}
+    permissions: '${permissions}'
+    content: |
+${replace(content, "/(?m)^/", "      ")}
