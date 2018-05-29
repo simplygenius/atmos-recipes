@@ -5,7 +5,7 @@ variable "service_<%= name %>_db_password" {
 }
 
 module "service-<%= name %>-secret-access" {
-  source = "../modules/secret_access"
+  source = "../modules/secret-access"
   secret_bucket = "${var.secret_bucket}"
   role = "${module.service-<%= name %>.task_role}"
   keys = ["service_<%= name %>_db_password"]

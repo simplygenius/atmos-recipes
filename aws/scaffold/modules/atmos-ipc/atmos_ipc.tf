@@ -28,5 +28,6 @@ data "external" "notify" {
 }
 
 output "force_dependency" {
+  description = "Allows one to force a dependency on this module completing, e.g. when modal=true"
   value = "${jsonencode(data.external.notify.*.result) == "" ? "" : ""}"
 }

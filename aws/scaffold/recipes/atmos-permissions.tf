@@ -157,7 +157,7 @@ resource "aws_iam_access_key" "deployer" {
 
 // Set enabled=1 to display deployer keys to get them for your CI system
 module "display-access-keys" {
-  source = "../modules/atmos_ipc"
+  source = "../modules/atmos-ipc"
   action = "notify"
   enabled = "${0 * (var.atmos_env == local.ops_env ? 1 : 0)}"
   params = {

@@ -4,7 +4,7 @@ dependent_templates:
   - aws/vpc
   - aws/dns
   - aws/database
-  - aws/load_balancer
+  - aws/load-balancer
   - aws/container
 optional:
   # Always ignore since we template it through ERB to produce the recipe based
