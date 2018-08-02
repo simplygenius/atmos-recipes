@@ -39,7 +39,6 @@ variable "region" {
 
 variable "backend" {
   description = "The backend state configuration, value supplied by atmos.yml"
-  description = "The backend state configuration, value supplied by atmos.yml"
   type = "map"
 }
 
