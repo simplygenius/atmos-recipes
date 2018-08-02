@@ -84,10 +84,11 @@ variable "ops_alerts_topic" {
 locals {
   ops_env = "ops"
   ops_account = "${lookup(var.account_ids, local.ops_env)}"
+  current_account = "${lookup(var.account_ids, var.atmos_env)}"
   envs_without_ops = "${compact(split(",", replace(join(",", var.all_env_names), local.ops_env, "")))}"
 }
 
 provider "aws" {
-  version = "1.20.0"
+  version = "1.30.0"
   region = "${var.region}"
 }
