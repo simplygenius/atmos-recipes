@@ -4,9 +4,9 @@ describe "cloudinit-files" do
 
   let(:module_path) { File.expand_path("aws/cloudinit/modules/cloudinit-files", repo_dir)}
 
-  describe "generates cloudinit config for uploading files" do
+  describe "generates cloudinit config for uploading templates" do
 
-    it "handles empty files list" do
+    it "handles empty templates list" do
       tf = <<~EOF
         module "test" {
           source = "#{module_path}"
@@ -23,7 +23,7 @@ describe "cloudinit-files" do
       expect(YAML.load(value)['write_files']).to be_nil
     end
 
-    it "generates files list for single file" do
+    it "generates templates list for single file" do
       tf = <<~EOF
         module "test" {
           source = "#{module_path}"
@@ -51,7 +51,7 @@ describe "cloudinit-files" do
       expect(yml['write_files'].first['permissions']).to eq("0777")
     end
 
-    it "generates files list with defaults" do
+    it "generates templates list with defaults" do
       tf = <<~EOF
         module "test" {
           source = "#{module_path}"
@@ -77,7 +77,7 @@ describe "cloudinit-files" do
       expect(yml['write_files'].first['permissions']).to eq("0644")
     end
 
-    it "generates files list for multiple file" do
+    it "generates templates list for multiple file" do
       tf = <<~EOF
         module "test" {
           source = "#{module_path}"
