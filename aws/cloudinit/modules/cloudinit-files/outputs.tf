@@ -1,4 +1,4 @@
 output "rendered" {
-  description = "The rendered cloudinit config yml containing the files specified whenn calling this module"
+  description = "The rendered cloudinit config yml containing the files specified when calling this module"
   value = "${data.template_file.cloudinit-write-files-config.rendered}"
 }
