@@ -14,6 +14,7 @@ module "instance-group-<%= name %>" {
   vpc_id = "${module.vpc.vpc_id}"
   subnet_ids = "${module.vpc.private_subnet_ids}"
   zone_id = "${module.dns.private_zone_id}"
+  security_groups = ["${module.vpc.default_security_group_id}"]
 
   image_id = "${lookup(var.instance_images, "<%= name %>", local.instance_images_default)}"
   instance_type = "${lookup(var.instance_types, "<%= name %>", var.instance_types_default)}"
@@ -24,8 +25,32 @@ module "instance-group-<%= name %>" {
   max_scale_factor = "${var.instance_max_count_scale_factor}"
   <%- end -%>
   cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
+
+  user_data = "${module.instance-group-userdata-<%= name %>.rendered}"
 }
 
+module "instance-group-userdata-<%= name %>" {
+  source = "../modules/atmos-user-data"
+
+  atmos_env = "${var.atmos_env}"
+  global_name_prefix = "${var.global_name_prefix}"
+  local_name_prefix = "${var.local_name_prefix}"
+  name = "<%= name %>"
+  account_ids = "${var.account_ids}"
+
+  instance_role = "${module.instance-group-<%= name %>.instance_role}"
+  lock_table = "${local.instance_group_lock_table}"
+  lock_key = "${local.instance_group_lock_key}"
+  zone_id = "${module.dns.private_zone_id}"
+  iam_inspect_role = "${module.instance-group-iam-inspect-for-ssh.upstream_role}"
+  iam_permission_groups = "${local.iam_permission_groups}"
+  policies = [
+    {
+      name = "${var.local_name_prefix}iam-inspect-for-ssh"
+      policy = "${module.instance-group-iam-inspect-for-ssh.downstream_policy}"
+    }
+  ]
+}
 
 <%- if auto_scale -%>
 

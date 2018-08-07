@@ -83,7 +83,7 @@ resource "aws_autoscaling_group" "main" {
   lifecycle {
     create_before_destroy = true
   }
-  name = "${var.local_name_prefix}${var.name}${var.recreate_instances_on_update == 1 ? aws_launch_configuration.main.id : ""}"
+  name = "${var.recreate_instances_on_update == 1 ? aws_launch_configuration.main.id : "${var.local_name_prefix}${var.name}"}"
   min_size = "${local.min_size}"
   desired_capacity = "${var.instance_desired}"
   max_size = "${local.max_size}"
@@ -109,7 +109,7 @@ resource "aws_launch_configuration" "main" {
     create_before_destroy = true
   }
 
-  name = "${var.local_name_prefix}${var.name}-lc-${var.image_id}"
+  name_prefix = "${var.local_name_prefix}${var.name}-lc-${var.image_id}-"
   image_id = "${var.image_id}"
   instance_type = "${var.instance_type}"
   key_name = "${var.keypair_name}"

@@ -8,12 +8,7 @@ output "auto_scaling_name" {
   value = "${aws_autoscaling_group.main.name}"
 }
 
-output "instance_profile" {
-  description = "The name of the instance profile for the instances"
-  value = "${aws_iam_instance_profile.main.name}"
-}
-
-output "instance_profile_role" {
-  description = "The name of the role to be used for granting IAM permissions to instance in the group"
+output "instance_role" {
+  description = "The name of the role used for granting IAM permissions to instances in the group"
   value = "${aws_iam_role.main.name}"
 }

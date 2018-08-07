@@ -6,6 +6,22 @@ if name.present?
 
   template('aws/instance-group/instance_group_template.tf', "recipes/instance-group-#{name}.tf", context: binding)
 
+  if ! config_present?('config/atmos.yml', 'recipes.default', "instance-group-variables")
+    add_config 'config/atmos.yml', 'recipes.default', ["instance-group-variables"]
+  end
+
+  if ! config_present?('config/atmos.yml', 'recipes.default', "instance-group-support")
+    add_config 'config/atmos.yml', 'recipes.default', ["instance-group-support"]
+  end
+
+  if ! config_present?('config/atmos.yml', 'recipes.default', "instance-group-permissions")
+    add_config 'config/atmos.yml', 'recipes.default', ["instance-group-permissions"]
+  end
+
+  if ! config_present?('config/atmos.yml', 'environments.ops.recipes.^default', "instance-group-permissions")
+    add_config 'config/atmos.yml', 'environments.ops.recipes.^default', ["instance-group-permissions"]
+  end
+
   if ! config_present?('config/atmos.yml', 'recipes.default', "instance-group-#{name}")
     add_config 'config/atmos.yml', 'recipes.default', ["instance-group-#{name}"]
   end
