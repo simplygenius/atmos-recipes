@@ -1,0 +1,8 @@
+package_upgrade: true
+
+packages:
+  - git
+  - vim
+  - curl
+  - jq
+  - ruby

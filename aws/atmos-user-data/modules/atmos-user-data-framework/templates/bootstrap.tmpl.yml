@@ -1,0 +1,4 @@
+package_upgrade: ${upgrade_packages}
+
+packages:
+  - curl

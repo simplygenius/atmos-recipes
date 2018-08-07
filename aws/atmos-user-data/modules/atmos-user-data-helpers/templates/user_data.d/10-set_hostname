@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# fail fast
+set -e
+
+name_file=/etc/atmos-reserved-name
+
+# Sets the Name
+/opt/atmos/bin/reserve_name.rb \
+  -i "$INSTANCE_ID" \
+  -n "$ATMOS_NAME" -d "$DOMAIN" \
+  -t "aws:autoscaling:groupName" -v "$LOCAL_NAME_PREFIX$ATMOS_NAME" \
+  -l "$LOCK_TABLE" -k "$LOCK_KEY" \
+  -o "$name_file"
+
+new_name=$(cat "$name_file")
+echo "Setting hostname to '$new_name'"
+
+if hash hostnamectl &> /dev/null; then
+  hostnamectl set-hostname ${new_name}
+elif [[ -f /etc/sysconfig/network ]]; then
+  sed -ie "s/HOSTNAME=.*/HOSTNAME=${new_name}/" /etc/sysconfig/network
+  hostname ${new_name}
+elif [[ -f /etc/hostname ]]; then
+  echo ${new_name} > /etc/hostname
+  hostname ${new_name}
+else
+  echo "Could not persist hostname, setting as transient"
+  hostname ${new_name}
+fi
+
+# Restart rsyslog to ensure it picks up the new hostname
+service rsyslog restart || true
+
+# Add local resolution for the new hostname (good practice, plus stops a sudo warning when using
+# hardened ami)
+echo "127.0.0.1 $new_name" >> /etc/hosts
+
+# Add a dns record for this instance to route53
+/opt/atmos/bin/update_route53.rb -z "${ZONE_ID}" -a upsert -n "$(hostname)" -i "$INSTANCE_IP"

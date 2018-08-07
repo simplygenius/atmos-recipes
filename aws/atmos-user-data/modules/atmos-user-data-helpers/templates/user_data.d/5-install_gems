@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# fail fast
+set -e
+
+gem install clamp marloss aws-sdk-iam aws-sdk-route53 aws-sdk-ec2
