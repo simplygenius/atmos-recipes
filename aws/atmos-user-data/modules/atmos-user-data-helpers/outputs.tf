@@ -18,7 +18,7 @@ output "environment" {
   value = {
     ATMOS_NAME="${var.name}"
     ZONE_ID="${var.zone_id}"
-    DOMAIN="${data.aws_route53_zone.zone.name}"
+    DOMAIN="${replace(data.aws_route53_zone.zone.name, "/\\.$/", "")}"
     LOCK_TABLE="${var.lock_table}"
     LOCK_KEY="${var.lock_key}"
   }
