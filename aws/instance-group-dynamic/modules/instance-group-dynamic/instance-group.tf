@@ -31,54 +31,6 @@ resource "aws_iam_role" "main" {
 POLICY
 }
 
-resource "aws_iam_role_policy" "cloudwatch-logs" {
-  name = "${var.local_name_prefix}${var.name}-cloudwatch-logs"
-  role = "${aws_iam_role.main.name}"
-
-  policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents",
-        "logs:DescribeLogStreams"
-      ],
-      "Resource": [
-        "arn:aws:logs:*:*:*"
-      ]
-    }
-  ]
-}
-POLICY
-}
-
-resource "aws_iam_role_policy" "cloudwatch-monitor" {
-  name = "${var.local_name_prefix}${var.name}-cloudwatch-monitor"
-  role = "${aws_iam_role.main.name}"
-
-  policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "cloudwatch:PutMetricData",
-        "cloudwatch:GetMetricStatistics",
-        "cloudwatch:ListMetrics",
-        "ec2:DescribeTags"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-POLICY
-}
-
 resource "aws_autoscaling_group" "main" {
   lifecycle {
     create_before_destroy = true

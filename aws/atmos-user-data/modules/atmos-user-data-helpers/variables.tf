@@ -82,3 +82,8 @@ variable "enable_cloudwatch_logs" {
   description = ""
   default = 1
 }
+
+variable "cloudwatch_agent_config" {
+  description = "The configuration for the cloudwatch agent on each instance.  Processed as a template with vars: global_name_prefix, local_name_prefix, atmos_env, name"
+  default = ""
+}

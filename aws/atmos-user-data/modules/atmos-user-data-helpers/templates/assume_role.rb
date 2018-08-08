@@ -20,7 +20,6 @@ Clamp do
     role_arn = "arn:aws:iam::#{account}:role/#{role}"
     sts = ::Aws::STS::Client.new
 
-    params =
     resp = sts.assume_role({
         duration_seconds: duration,
         role_session_name: "Atmos",

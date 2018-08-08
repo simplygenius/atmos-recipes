@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# fail fast
+set -e
+
+tmpdir=$(mktemp -d)
+cd $tmpdir
+curl -sfO https://s3.amazonaws.com/amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip
+unzip AmazonCloudWatchAgent.zip
+./install.sh
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/atmos/config/amazon-cloudwatch-agent.json -s

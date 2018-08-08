@@ -6,6 +6,17 @@ data "template_file" "bootstrap_cloudinit" {
   template = "${file("${path.module}/templates/bootstrap.yml")}"
 }
 
+data "template_file" "cloudwatch_agent_config" {
+  template = "${var.cloudwatch_agent_config != "" ? var.cloudwatch_agent_config : file("${path.module}/templates/cloudwatch_agent_config.tmpl.json")}"
+
+  vars {
+    global_name_prefix = "${var.global_name_prefix}"
+    local_name_prefix = "${var.local_name_prefix}"
+    atmos_env = "${var.atmos_env}"
+    name = "${var.name}"
+  }
+}
+
 data "template_file" "sync_iam_users" {
   template = "${file("${path.module}/templates/sync_iam_users.tmpl.sh")}"
   vars {
@@ -97,21 +108,99 @@ POLICY
   ]
 }
 POLICY
+    },
+    {
+      name = "${var.local_name_prefix}${var.name}-cloudwatch-agent"
+      policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricData",
+        "ec2:DescribeTags",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams",
+        "logs:DescribeLogGroups",
+        "logs:CreateLogStream",
+        "logs:CreateLogGroup"
+      ],
+      "Resource": "*"
+      },
+      {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter"
+      ],
+      "Resource": "arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*"
+      }
+  ]
+}
+POLICY
     }
   ]
 
   files = [
     {
+      path = "${var.user_data_dir}/5-install_gems"
+      owner = "root:root"
+      permissions = "0755"
+      content = "${file("${path.module}/templates/user_data.d/install_gems")}"
+    },
+
+
+    {
+      path = "/opt/atmos/bin/reserve_name.rb"
+      owner = "root:root"
+      permissions = "0755"
+      content = "${file("${path.module}/templates/reserve_name.rb")}"
+    },
+    {
+      path = "/etc/init/route53-add.conf"
+      owner = "root:root"
+      permissions = "0644"
+      content = "${file("${path.module}/templates/route53-add.conf")}"
+    },
+    {
+      path = "/etc/init/route53-remove.conf"
+      owner = "root:root"
+      permissions = "0644"
+      content = "${file("${path.module}/templates/route53-remove.conf")}"
+    },
+    {
+      path = "/opt/atmos/bin/update_route53.rb"
+      owner = "root:root"
+      permissions = "0755"
+      content = "${file("${path.module}/templates/update_route53.rb")}"
+    },
+    {
+      path = "${var.user_data_dir}/10-set_hostname"
+      owner = "root:root"
+      permissions = "0755"
+      content = "${file("${path.module}/templates/user_data.d/set_hostname")}"
+    },
+
+
+    {
+      path = "/opt/atmos/config/amazon-cloudwatch-agent.json"
+      owner = "root:root"
+      permissions = "0644"
+      content = "${data.template_file.cloudwatch_agent_config.rendered}"
+    },
+    {
+      path = "${var.user_data_dir}/15-install_cloudwatch_agent"
+      owner = "root:root"
+      permissions = "0755"
+      content = "${file("${path.module}/templates/user_data.d/install_cloudwatch_agent")}"
+    },
+
+
+    {
       path = "/opt/atmos/bin/assume_role.rb"
       owner = "root:root"
       permissions = "0755"
       content = "${file("${path.module}/templates/assume_role.rb")}"
-    },
-    {
-      path = "/var/awslogs/etc/awslogs.conf"
-      owner = "root:root"
-      permissions = "0644"
-      content = "${file("${path.module}/templates/awslogs.conf")}"
     },
     {
       path = "/opt/atmos/bin/lookup_iam_users.rb"
@@ -138,58 +227,10 @@ POLICY
       content = "${file("${path.module}/templates/sync_iam_users.cron")}"
     },
     {
-      path = "/opt/atmos/bin/reserve_name.rb"
-      owner = "root:root"
-      permissions = "0755"
-      content = "${file("${path.module}/templates/reserve_name.rb")}"
-    },
-    {
-      path = "/etc/init/route53-add.conf"
-      owner = "root:root"
-      permissions = "0644"
-      content = "${file("${path.module}/templates/route53-add.conf")}"
-    },
-    {
-      path = "/etc/init/route53-remove.conf"
-      owner = "root:root"
-      permissions = "0644"
-      content = "${file("${path.module}/templates/route53-remove.conf")}"
-    },
-    {
-      path = "/opt/atmos/bin/update_route53.rb"
-      owner = "root:root"
-      permissions = "0755"
-      content = "${file("${path.module}/templates/update_route53.rb")}"
-    },
-    {
-      path = "${var.user_data_dir}/5-install_gems"
-      owner = "root:root"
-      permissions = "0755"
-      content = "${file("${path.module}/templates/user_data.d/5-install_gems")}"
-    },
-    {
-      path = "${var.user_data_dir}/10-set_hostname"
-      owner = "root:root"
-      permissions = "0755"
-      content = "${file("${path.module}/templates/user_data.d/10-set_hostname")}"
-    },
-    {
       path = "${var.user_data_dir}/20-sync_iam_users"
       owner = "root:root"
       permissions = "0755"
-      content = "${file("${path.module}/templates/user_data.d/20-sync_iam_users")}"
+      content = "${file("${path.module}/templates/user_data.d/sync_iam_users")}"
     },
-    {
-      path = "${var.user_data_dir}/30-install_awslogs"
-      owner = "root:root"
-      permissions = "0755"
-      content = "${file("${path.module}/templates/user_data.d/30-install_awslogs")}"
-    },
-    {
-      path = "${var.user_data_dir}/30-install_cloudwatch_monitor"
-      owner = "root:root"
-      permissions = "0755"
-      content = "${file("${path.module}/templates/user_data.d/30-install_cloudwatch_monitor")}"
-    }
   ]
 }
