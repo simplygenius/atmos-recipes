@@ -13,9 +13,19 @@ output "public_subnet_ids" {
   value = "${aws_subnet.public.*.id}"
 }
 
+output "public_route_table_ids" {
+  description = "The route table ids for the public subnets"
+  value = "${aws_route_table.public.*.id}"
+}
+
 output "private_subnet_ids" {
   description = "The subnet ids for the private subnets"
   value = "${aws_subnet.private.*.id}"
+}
+
+output "private_route_table_ids" {
+  description = "The route table ids for the private subnets"
+  value = "${aws_route_table.private.*.id}"
 }
 
 output "default_security_group_id" {
