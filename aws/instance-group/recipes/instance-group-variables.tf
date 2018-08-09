@@ -74,6 +74,11 @@ data "aws_ami" "ubuntu" {
     values = ["hvm"]
   }
 
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
   owners = ["099720109477"] # Ubuntu
 }
 
@@ -95,10 +100,15 @@ data "aws_ami" "amazon" {
     values = ["hvm"]
   }
 
-  owners = ["137112412989"] # Amazon
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  owners = ["amazon"]
 }
 
-data "aws_ami" "amazon_ecs" {
+data "aws_ami" "amazon-ecs" {
   most_recent = true
 
   filter {
@@ -116,5 +126,10 @@ data "aws_ami" "amazon_ecs" {
     values = ["hvm"]
   }
 
-  owners = ["591542846629"] # Amazon
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  owners = ["amazon"]
 }
