@@ -3,4 +3,16 @@
 # fail fast
 set -e
 
-gem install clamp marloss aws-sdk-iam aws-sdk-route53 aws-sdk-ec2
+uname=$(uname -a)
+
+# The default ruby on amzn is 2.0 and has issues with some of the gems we use (marloss)
+#
+# The ruby version installed from bootstrap.yml for Ubuntu/Debian is v2.3, so
+# use that instead of latest available (2.4) for amzn linux for consistencies sake
+#
+if [[ $uname =~ "amzn1" ]]; then
+  yum install -y ruby23
+  alternatives --set ruby /usr/bin/ruby2.3
+fi
+
+gem install --no-rdoc --no-ri clamp marloss aws-sdk-iam aws-sdk-route53 aws-sdk-ec2
