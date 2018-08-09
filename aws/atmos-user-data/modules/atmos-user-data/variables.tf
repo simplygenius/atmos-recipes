@@ -105,3 +105,18 @@ variable "lock_table" {
 variable "lock_key" {
   description = "The hash key in lock_table for creating the lock"
 }
+
+variable "user_data_bucket" {
+  description = "The bucket to use for storing user_data instead of directly in instance metadata"
+  default = ""
+}
+
+variable "user_data_bucket_compress" {
+  description = "Compress and base64encode the user data before storing in the s3 bucket"
+  default = true
+}
+
+variable "user_data_bucket_recreate_instances_on_update" {
+  description = "Set true to force instance recreation on a user-data content change when using the user data bucket"
+  default = true
+}

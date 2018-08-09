@@ -143,8 +143,12 @@ variable "recreate_instances_on_update" {
 
 variable "user_data" {
   description = "The user data to pass in for instance initialization"
-  // can't be empty string
-  default = " "
+  default = ""
+}
+
+variable "user_data_compress" {
+  description = "Compress the user data"
+  default = true
 }
 
 variable "cloudwatch_alarm_target" {

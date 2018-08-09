@@ -1,6 +1,6 @@
 output "rendered" {
   description = "The rendered user data in a form suitable for passing to resources that need it (cloudinit config)"
-  value = "${module.user-data-framework.rendered}"
+  value = "${local.user_data_bucket_enablement == 0 ? module.user-data-framework.rendered : join("", data.template_cloudinit_config.user-data-bucket.*.rendered)}"
 }
 
 output "user_data_dir" {

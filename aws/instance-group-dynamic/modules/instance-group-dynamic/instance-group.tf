@@ -56,6 +56,10 @@ resource "aws_autoscaling_group" "main" {
 
 }
 
+locals {
+  encoded_user_data = "${length(var.user_data) == 0 ? "" : (var.user_data_compress ? base64gzip(var.user_data) : base64encode(var.user_data))}"
+}
+
 resource "aws_launch_configuration" "main" {
   lifecycle {
     create_before_destroy = true
@@ -70,7 +74,12 @@ resource "aws_launch_configuration" "main" {
     "${aws_security_group.default.id}",
     "${compact(var.security_groups)}"
   ]
-  user_data = "${var.user_data}"
+
+  // Using user_data instead of user_data_base64 so we get reduced plan output.
+  // Should be fine as recent terraforms don't base64 encode user_data if already
+  // encoded.
+  user_data = "${local.encoded_user_data}"
+
   associate_public_ip_address = "${var.associate_public_ip_address}"
   enable_monitoring = false
 

@@ -64,7 +64,7 @@ module "user-data-files" {
 }
 
 data "template_cloudinit_config" "user-data" {
-  gzip = "true"
+  gzip = false
   base64_encode = false
 
   part {

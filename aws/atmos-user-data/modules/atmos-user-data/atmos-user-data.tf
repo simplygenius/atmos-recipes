@@ -49,3 +49,32 @@ resource "aws_iam_role_policy" "policies" {
   name = "${lookup(local.policies[count.index], "name")}"
   policy = "${lookup(local.policies[count.index], "policy")}"
 }
+
+locals {
+  user_data_bucket_enablement = "${var.user_data_bucket == "" ? 0 : 1}"
+  user_data_key = "user-data/${var.local_name_prefix}${var.name}/data.bin"
+  user_data_pkg = "${var.user_data_bucket_compress ? base64gzip(module.user-data-framework.rendered) : base64encode(module.user-data-framework.rendered)}"
+  maybe_recreate_param = "${var.user_data_bucket_recreate_instances_on_update ? format("?%s", md5(local.user_data_pkg)) : ""}"
+  user_data_url = "https://${var.user_data_bucket}.s3.amazonaws.com/${local.user_data_key}${local.maybe_recreate_param}"
+}
+
+resource "aws_s3_bucket_object" "user-data-bucket" {
+  count = "${local.user_data_bucket_enablement}"
+
+  bucket = "${var.user_data_bucket}"
+  key = "${local.user_data_key}"
+  content_base64 = "${local.user_data_pkg}"
+}
+
+data "template_cloudinit_config" "user-data-bucket" {
+  count = "${local.user_data_bucket_enablement}"
+
+  gzip = false
+  base64_encode = false
+
+  part {
+    content_type = "text/x-include-url"
+    content = "${local.user_data_url}"
+  }
+}
+
