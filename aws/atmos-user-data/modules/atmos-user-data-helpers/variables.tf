@@ -78,6 +78,11 @@ variable "enable_hostnames" {
   default = 1
 }
 
+variable "use_public_ip" {
+  description = "Use the public ip when registering instances with the route53 zone"
+  default = false
+}
+
 variable "enable_cloudwatch_logs" {
   description = ""
   default = 1

@@ -44,7 +44,12 @@ variable "additional_cloudinit_config" {
 }
 
 variable "additional_environment" {
-  description = "Additional environment variables to set in the remote environment"
+  description = <<-EOF
+    Additional environment variables to set in the remote environment.  Note
+    that environment is applied in a sorted order, so if you have an environment
+    variable that depends on another, it needs to come after it in a string
+    sort
+  EOF
   type = "map"
   default = {}
 }

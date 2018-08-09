@@ -93,6 +93,11 @@ variable "zone_id" {
   description = "The route53 zone for registering each instance's hostname"
 }
 
+variable "use_public_ip" {
+  description = "Use the public ip when registering instances with the route53 zone"
+  default = false
+}
+
 variable "lock_table" {
   description = "The dynamodb lock table used to ensure unique hostnames"
 }

@@ -84,10 +84,6 @@ variable "instance_type" {
   description = "Type of instances"
 }
 
-variable "zone_id" {
-  description = "The route53 zone for registering each instance's hostname"
-}
-
 variable "root_block_devices" {
   description = "The type of volume to use for the root device for each instance"
   type = "list"

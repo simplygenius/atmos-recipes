@@ -13,6 +13,7 @@ module "user-data-helpers" {
   iam_inspect_role = "${var.iam_inspect_role}"
   iam_permission_groups = "${var.iam_permission_groups}"
   zone_id = "${var.zone_id}"
+  use_public_ip = "${var.use_public_ip}"
   lock_table = "${var.lock_table}"
   lock_key = "${var.lock_key}"
 }

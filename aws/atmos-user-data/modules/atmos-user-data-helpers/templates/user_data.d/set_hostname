@@ -37,4 +37,4 @@ service rsyslog restart || true
 echo "127.0.0.1 $new_name" >> /etc/hosts
 
 # Add a dns record for this instance to route53
-/opt/atmos/bin/update_route53.rb -z "${ZONE_ID}" -a upsert -n "$(hostname)" -i "$INSTANCE_IP"
+/opt/atmos/bin/update_route53.rb -z "${ZONE_ID}" -a upsert -n "$(hostname)" -i "$ZONE_IP"

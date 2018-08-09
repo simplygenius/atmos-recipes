@@ -1,20 +1,28 @@
+
+locals {
+  default_env = {
+    ALARM_TARGET = "${var.cloudwatch_alarm_target}"
+    ATMOS_ENV = "${var.atmos_env}"
+    AVAILABILITY_ZONE = "$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)"
+    AWS_ACCOUNT = "$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -oP '(?<=\"accountId\" : \")[^\"]*(?=\")')"
+    AWS_DEFAULT_REGION = "$(echo $AVAILABILITY_ZONE | sed -e 's/[a-z]$//')"
+    DEBUG_USER_DATA = "${var.debug_user_data}"
+    GLOBAL_NAME_PREFIX = "${var.global_name_prefix}"
+    INSTANCE_ID = "$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
+    INSTANCE_PRIVATE_IP = "$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)"
+    INSTANCE_PUBLIC_IP = "$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)"
+    LOCAL_NAME_PREFIX = "${var.local_name_prefix}"
+    PATH = "/opt/atmos/bin:$PATH"
+    USER_DATA_DIR = "${var.user_data_dir}"
+    USER_DATA_LOG_DIR = "${var.user_data_log_dir}"
+    ZONE_IP = "$INSTANCE_PRIVATE_IP"
+  }
+  env = "${merge(local.default_env, var.additional_environment)}"
+}
+
 data "template_file" "environment" {
   template = <<EOF
-export PATH=/opt/atmos/bin:$PATH
-export ATMOS_ENV="${var.atmos_env}"
-export GLOBAL_NAME_PREFIX="${var.global_name_prefix}"
-export LOCAL_NAME_PREFIX="${var.local_name_prefix}"
-export ALARM_TARGET="${var.cloudwatch_alarm_target}"
-export INSTANCE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-export INSTANCE_PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-export AWS_ACCOUNT=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -oP '(?<="accountId" : ")[^"]*(?=")')
-export AVAILABILITY_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
-export AWS_DEFAULT_REGION=$(echo $AVAILABILITY_ZONE | sed -e 's/[a-z]$//')
-export USER_DATA_DIR="${var.user_data_dir}"
-export USER_DATA_LOG_DIR="${var.user_data_log_dir}"
-export DEBUG_USER_DATA="${var.debug_user_data}"
-${join("\n", formatlist("export %s=\"%s\"\n", keys(var.additional_environment), values(var.additional_environment)))}
+${join("\n", formatlist("export %s=\"%s\"", keys(local.env), values(local.env)))}
 EOF
 }
 

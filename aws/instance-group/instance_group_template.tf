@@ -13,7 +13,6 @@ module "instance-group-<%= name %>" {
 
   vpc_id = "${module.vpc.vpc_id}"
   subnet_ids = "${module.vpc.private_subnet_ids}"
-  zone_id = "${module.dns.private_zone_id}"
   security_groups = ["${module.vpc.default_security_group_id}"]
 
   image_id = "${lookup(var.instance_images, "<%= name %>", local.instance_images_default)}"

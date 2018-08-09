@@ -21,5 +21,6 @@ output "environment" {
     DOMAIN="${replace(data.aws_route53_zone.zone.name, "/\\.$/", "")}"
     LOCK_TABLE="${var.lock_table}"
     LOCK_KEY="${var.lock_key}"
+    ZONE_IP="${var.use_public_ip ? "$INSTANCE_PUBLIC_IP" : "$INSTANCE_PRIVATE_IP"}"
   }
 }
