@@ -65,6 +65,7 @@ POLICY
     {
       "Effect": "Allow",
       "Action": [
+        "route53:TestDNSAnswer",
         "route53:ChangeResourceRecordSets"
       ],
       "Resource": "arn:aws:route53:::hostedzone/${var.zone_id}"

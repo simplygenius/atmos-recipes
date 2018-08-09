@@ -23,6 +23,24 @@ Clamp do
     $stderr.puts "#{action}ing dns record: #{name} => #{ip}"
 
     route53 = Aws::Route53::Client.new
+
+    # We only delete when terminating an instance in order to cleanup records
+    # for instances that have gone away permanently.  If a replacement instance
+    # comes up before this runs, then we don't want to delete the record which
+    # has already been set to the new ip for the replacement
+    #
+    if action == 'delete'
+      resp = route53.test_dns_answer(
+          hosted_zone_id: zone,
+          record_name: name,
+          record_type: "A"
+      )
+      if resp.record_data.length != 1 || resp.record_data[0] != ip
+        $stderr.puts "Not deleting record as it exists with a different value than expected: #{resp.to_h}"
+        exit
+      end
+    end
+
     route53.change_resource_record_sets(
         change_batch: {
             changes: [
