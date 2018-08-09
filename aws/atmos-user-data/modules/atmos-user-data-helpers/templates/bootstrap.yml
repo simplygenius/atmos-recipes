@@ -1,8 +1,7 @@
 package_upgrade: true
 
 packages:
-  - git
   - vim
   - curl
-  - jq
+  - unzip
   - ruby
