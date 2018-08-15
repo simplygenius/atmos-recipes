@@ -50,10 +50,20 @@ resource "aws_s3_bucket" "logs" {
 
   // ELB: https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-access-logs.html#attach-bucket-policy
   policy = "${data.template_file.policy-logs-bucket.rendered}"
+
+  tags {
+    Env = "${var.atmos_env}",
+    Source = "atmos"
+  }
 }
 
 resource "aws_s3_bucket" "backup" {
   bucket = "${var.backup_bucket}"
   acl = "private"
   force_destroy = "${var.force_destroy_buckets}"
+
+  tags {
+    Env = "${var.atmos_env}",
+    Source = "atmos"
+  }
 }
