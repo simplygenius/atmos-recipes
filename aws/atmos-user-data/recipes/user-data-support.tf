@@ -39,6 +39,11 @@ resource "aws_s3_bucket" "user-data" {
   ]
 }
 EOF
+
+  tags {
+    Env = "${var.atmos_env}",
+    Source = "atmos"
+  }
 }
 
 // The restriction to allow reads only from a sourceVpc requires s3 to have a
