@@ -1,0 +1,17 @@
+region: us-east-1
+auth:
+  session_duration: 3600
+  assume_role_name: "#{atmos_env}-admin"
+  bootstrap_assume_role_name: "OrganizationAccountAccessRole"
+backend:
+  type: s3
+  bucket: "#{global_name_prefix}terraform-state"
+  key: "terraform.tfstate"
+  region: "#{region}"
+  encrypt: true
+  dynamodb_table: "#{global_name_prefix}atmos-terraform-lock"
+secret:
+  type: s3
+  bucket: "#{global_name_prefix}secrets"
+  region: "#{region}"
+  encrypt: true

@@ -1,3 +1,3 @@
-if ! config_present?('config/atmos.yml', 'recipes.default', 'vpc')
-  add_config 'config/atmos.yml', 'recipes.default', ['vpc']
+if ! config_present?('config/atmos/recipes.yml', 'recipes.default', 'vpc')
+  add_config 'config/atmos/recipes.yml', 'recipes.default', ['vpc']
 end

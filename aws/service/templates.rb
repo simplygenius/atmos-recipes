@@ -1,19 +1,19 @@
-if ! config_present?('config/atmos.yml', 'recipes.default', 'service')
-  add_config 'config/atmos.yml', 'recipes.default', ['service']
+if ! config_present?('config/atmos/recipes.yml', 'recipes.default', 'service')
+  add_config 'config/atmos/recipes.yml', 'recipes.default', ['service']
 end
 
-name = ask('Input the service name (empty to skip): ')
+name = ask('Input the service name (empty to skip): ', varname: name)
 if name.present?
-  rds = agree('Does the service need a RDS database? ') {|q| q.default = 'y' }
-  lb = agree('Does the service need a load balancer? ') {|q| q.default = 'y' }
+  rds = agree('Does the service need a RDS database? ', varname: :use_rds) {|q| q.default = 'y' }
+  lb = agree('Does the service need a load balancer? ', varname: :use_lb) {|q| q.default = 'y' }
   if lb
-    external = agree('Should the Load Balancer be internet facing? ') {|q| q.default = 'y' }
+    external = agree('Should the Load Balancer be internet facing? ', varname: :external_lb) {|q| q.default = 'y' }
   end
 
   template('aws/service/service_template.tf', "recipes/service-#{name}.tf", context: binding)
 
-  if ! config_present?('config/atmos.yml', 'recipes.default', "service-#{name}")
-    add_config 'config/atmos.yml', 'recipes.default', ["service-#{name}"]
+  if ! config_present?('config/atmos/recipes.yml', 'recipes.default', "service-#{name}")
+    add_config 'config/atmos/recipes.yml', 'recipes.default', ["service-#{name}"]
   end
 
   if rds
