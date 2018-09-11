@@ -17,11 +17,11 @@ if ! config_present?('config/atmos/recipes.yml', 'environments.ops.recipes.^defa
 end
 
 if ! config_present?('config/atmos.yml', 'org')
-  val = ask 'Input a short name that represents your organization: ', varname: :org
-  add_config 'config/atmos.yml', 'org', val
+  ask 'Input a short name that represents your organization: ', varname: :org
+  add_config 'config/atmos.yml', 'org', org
 end
 
 if ! config_present?('config/atmos.yml', 'environments.ops.account_id')
-  val = ask 'Input the AWS account id for the ops environment: ', varname: :account_id
-  add_config 'config/atmos.yml', 'environments.ops.account_id', val
+  ask 'Input the AWS account id for the ops environment: ', varname: :account_id
+  add_config 'config/atmos.yml', 'environments.ops.account_id', account_id
 end

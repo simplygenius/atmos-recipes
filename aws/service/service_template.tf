@@ -1,4 +1,4 @@
-<%- if rds -%>
+<%- if use_rds -%>
 variable "service_<%= name %>_db_password" {
   // Should be overriden in secrets
   default = "<%= name.length >= 8 ? name : "#{name}secret!" %>"
@@ -47,7 +47,7 @@ resource "aws_security_group_rule" "service-<%= name %>-rds-ingress" {
 
 <%- end -%>
 
-<%- if lb -%>
+<%- if use_lb -%>
 module "service-<%= name %>-alb" {
   source = "../modules/alb"
 
@@ -56,9 +56,9 @@ module "service-<%= name %>-alb" {
   local_name_prefix = "${var.local_name_prefix}"
   name = "<%= name %>"
 
-  internal = <%= ! external %>
-  zone_id = "${module.dns.<%= external ? 'public' : 'private' %>_zone_id}"
-  subnet_ids = "${module.vpc.<%= external ? 'public' : 'private' %>_subnet_ids}"
+  internal = <%= ! external_lb %>
+  zone_id = "${module.dns.<%= external_lb ? 'public' : 'private' %>_zone_id}"
+  subnet_ids = "${module.vpc.<%= external_lb ? 'public' : 'private' %>_subnet_ids}"
   vpc_id = "${module.vpc.vpc_id}"
   logs_bucket = "${aws_s3_bucket.logs.bucket}"
 
@@ -75,7 +75,7 @@ resource "aws_security_group_rule" "service-<%= name %>-alb-http-ingress" {
   to_port = 80
   protocol = "tcp"
 
-  <%- if external -%>
+  <%- if external_lb -%>
   cidr_blocks = ["0.0.0.0/0"]
   <%- else -%>
   cidr_blocks = ["${var.vpc_cidr}"]
@@ -90,7 +90,7 @@ resource "aws_security_group_rule" "service-<%= name %>-alb-https-ingress" {
   to_port = 443
   protocol = "tcp"
 
-  <%- if external -%>
+  <%- if external_lb -%>
   cidr_blocks = ["0.0.0.0/0"]
   <%- else -%>
   cidr_blocks = ["${var.vpc_cidr}"]
@@ -146,8 +146,8 @@ module "service-<%= name %>" {
   name = "<%= name %>"
   ecs_cluster_arn = "${aws_ecs_cluster.services.arn}"
 
-  integrate_with_lb = <%= lb ? 1 : 0 %>
-  <%- if lb -%>
+  integrate_with_lb = <%= use_lb ? 1 : 0 %>
+  <%- if use_lb -%>
   alb_target_group_id = "${module.service-<%= name %>-alb.alb_target_group_id}"
   <%- end -%>
 
