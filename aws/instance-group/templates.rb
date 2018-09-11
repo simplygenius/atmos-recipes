@@ -1,7 +1,13 @@
-name = ask('Input the instance group name (empty to skip): ', varname: :name)
+ask('Input the instance group name (empty to skip): ', varname: :name)
 
 if name.present?
-  auto_scale = agree('Would you like to auto scale the instance group? ', varname: :auto_scale) {|q| q.default = 'y' }
+  agree('Would you like to auto scale the instance group? ', varname: :auto_scale) {|q| q.default = 'y' }
+
+  choose(varname: :load_balancer) do |menu|
+    menu.prompt = "Add a load balancer in front of the instance group?  "
+    menu.choices(:none, :internal, :external)
+    menu.default = :none
+  end
 
   template('aws/instance-group/instance_group_template.tf', "recipes/instance-group-#{name}.tf", context: binding)
 

@@ -66,30 +66,4 @@ module "instance-group-autoscale-<%= name %>" {
 
 <%- end # auto_scale -%>
 
-<%- if load_balancer -%>
-
-resource "aws_lb" "instance-group-load-balancer-<%= name %>" {
-name               = "${var.local_name_prefix}<%= name %>"
-internal           = false
-load_balancer_type = "network"
-subnets            = ["${module.vpc.public_subnet_ids}"]
-
-tags {
-Environment = "production"
-}
-}
-
-module "instance-group-load-balancer-<%= name %>" {
-source = "../modules/auto-scaling-policy"
-
-atmos_env = "${var.atmos_env}"
-global_name_prefix = "${var.global_name_prefix}"
-local_name_prefix = "${var.local_name_prefix}"
-name = "<%= name %>"
-
-auto_scaling_name = "${module.instance-group-<%= name %>.auto_scaling_name}"
-}
-
-<%- end # auto_scale -%>
-
 <%- end # name -%>
