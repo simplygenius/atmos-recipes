@@ -88,6 +88,6 @@ locals {
 }
 
 provider "aws" {
-  version = "1.30.0"
+  version = "1.36.0"
   region = "${var.region}"
 }
