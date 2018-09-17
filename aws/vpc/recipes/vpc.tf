@@ -8,6 +8,11 @@ variable "vpc_cidr" {
   default = "10.10.0.0/16"
 }
 
+variable "vpc_enable_nat" {
+  description = "Enable NAT Gateways (one per AZ) for the VPC"
+  default = "1"
+}
+
 variable "permissive_default_security_group" {
   description = <<-EOF
     Sets up the default security group to allow permissive internal ingress,
@@ -37,6 +42,7 @@ module "vpc" {
 
   az_count = "${var.az_count}"
   vpc_cidr = "${var.vpc_cidr}"
+  enable_nat = "${var.vpc_enable_nat}"
 
   permissive_default_security_group = "${var.permissive_default_security_group}"
 }
