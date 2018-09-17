@@ -11,6 +11,12 @@ resource "aws_vpc" "primary" {
   }
 }
 
+// A global mutable seurity group since the aws_default_security_group is not mutable after the fact
+resource "aws_security_group" "global" {
+  name = "${var.local_name_prefix}vpc-global"
+  vpc_id = "${aws_vpc.primary.id}"
+}
+
 resource "aws_default_security_group" "default-both" {
   count = "${var.permissive_default_security_group == "both" ? 1 : 0}"
   vpc_id = "${aws_vpc.primary.id}"

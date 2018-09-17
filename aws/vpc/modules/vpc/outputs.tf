@@ -28,13 +28,27 @@ output "private_route_table_ids" {
   value = "${aws_route_table.private.*.id}"
 }
 
-output "default_security_group_id" {
-  description = "The id for the default security group for this vpc"
-  value = "${element(concat(
+locals {
+  default_sg = "${element(concat(
     aws_default_security_group.default-both.*.id,
     aws_default_security_group.default-egress.*.id,
     aws_default_security_group.default-ingress.*.id,
     aws_default_security_group.default-none.*.id,
     list("")
   ), 0)}"
+}
+
+output "default_security_group_id" {
+  description = "The id for the default security group for this vpc"
+  value = "${local.default_sg}"
+}
+
+output "global_security_group_id" {
+  description = "The id for the global security group for this vpc, for adding global rules after creation"
+  value = "${aws_security_group.global.id}"
+}
+
+output "security_group_ids" {
+  description = "A convenience for adding both vpc security group ids to resources"
+  value = ["${local.default_sg}", "${aws_security_group.global.id}"]
 }
