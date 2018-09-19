@@ -1,4 +1,4 @@
-description: AWS Load Balancers
+description: A module to define an Application Load Balancer
 dependent_templates:
   - aws/scaffold
   - aws/vpc

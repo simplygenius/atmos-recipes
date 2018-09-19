@@ -49,3 +49,19 @@ variable "image_expiry_days" {
   description = "Clean up images older than this number of days"
   default = 30
 }
+
+variable "launch_type" {
+  description = "The launch type for the ecs service.  Can be one of FARGATE or EC2"
+  default = "FARGATE"
+}
+
+variable "network_mode" {
+  description = "The network mode for ecs tasks"
+  default = "awsvpc"
+}
+
+variable "volumes" {
+  description = "The volumes to use for the containers"
+  type = "list"
+  default = []
+}

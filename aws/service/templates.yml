@@ -4,8 +4,8 @@ dependent_templates:
   - aws/vpc
   - aws/dns
   - aws/database
-  - aws/load-balancer
-  - aws/container/ecs-fargate
+  - aws/load-balancer/application
+  - aws/container/ecs
 optional:
   # Always ignore since we template it through ERB to produce the recipe based
   # on the service name

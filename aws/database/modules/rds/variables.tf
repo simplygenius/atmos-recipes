@@ -43,6 +43,10 @@ variable "subnet_ids" {
   type = "list"
 }
 
+variable "source_security_group" {
+  description = "The source security group used for adding rules to the source access to the DB"
+}
+
 variable "security_groups" {
   description = "The security groups associated with the instance"
   type = "list"

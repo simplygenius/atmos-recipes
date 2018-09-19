@@ -1,8 +1,3 @@
-resource "aws_security_group" "default" {
-  name = "${var.local_name_prefix}ecs-${var.name}"
-  vpc_id = "${var.vpc_id}"
-}
-
 resource "aws_iam_role" "ecs-task" {
   name = "${var.local_name_prefix}ecs-task-${var.name}"
   assume_role_policy = <<POLICY
@@ -85,7 +80,6 @@ data "template_file" "containers_template" {
   vars {
     atmos_env = "${var.atmos_env}"
     name = "${var.local_name_prefix}${var.name}"
-    cluster_name = "${element(split("/", var.ecs_cluster_arn), 1)}"
     registry_host = "${join("", aws_ecr_repository.main.*.registry_id)}.dkr.ecr.${var.region}.amazonaws.com"
     repository_name = "${join("", aws_ecr_repository.main.*.name)}"
     log_group_name = "${aws_cloudwatch_log_group.main.name}"
@@ -98,6 +92,7 @@ data "template_file" "containers_template" {
 resource "aws_ecs_task_definition" "main" {
   family = "${var.local_name_prefix}${var.name}"
   container_definitions = "${data.template_file.containers_template.rendered}"
+  volume = "${var.volumes}"
 
   task_role_arn = "${aws_iam_role.ecs-task.arn}"
   execution_role_arn = "${aws_iam_role.ecs-execution.arn}"
@@ -105,61 +100,6 @@ resource "aws_ecs_task_definition" "main" {
   cpu = "${var.cpu}"
   memory = "${var.memory}"
 
-  network_mode = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-}
-
-data "aws_ecs_task_definition" "main" {
-  depends_on = [ "aws_ecs_task_definition.main" ]
-  task_definition = "${aws_ecs_task_definition.main.family}"
-}
-
-resource "aws_ecs_service" "main_with_lb" {
-  count = "${signum(var.integrate_with_lb)}"
-
-  name = "${var.local_name_prefix}${var.name}"
-
-  launch_type = "FARGATE"
-  cluster = "${var.ecs_cluster_arn}"
-
-  desired_count = "${var.container_count}"
-  deployment_minimum_healthy_percent = "${var.deployment_minimum_healthy_percent}"
-  deployment_maximum_percent = "${var.deployment_maximum_percent}"
-
-  # Track the latest ACTIVE revision
-  task_definition = "${aws_ecs_task_definition.main.family}:${max("${aws_ecs_task_definition.main.revision}", "${data.aws_ecs_task_definition.main.revision}")}"
-
-  network_configuration {
-    security_groups = ["${aws_security_group.default.id}", "${var.security_groups}"]
-    subnets         = ["${var.subnet_ids}"]
-  }
-
-  load_balancer {
-    target_group_arn = "${var.alb_target_group_id}"
-    container_name = "${var.local_name_prefix}${var.name}"
-    container_port = "${var.port}"
-  }
-
-}
-
-resource "aws_ecs_service" "main_without_lb" {
-  count = "${signum(var.integrate_with_lb) == 0 ? 1 : 0}"
-
-  name = "${var.local_name_prefix}${var.name}"
-
-  launch_type = "FARGATE"
-  cluster = "${var.ecs_cluster_arn}"
-
-  desired_count = "${var.container_count}"
-  deployment_minimum_healthy_percent = "${var.deployment_minimum_healthy_percent}"
-  deployment_maximum_percent = "${var.deployment_maximum_percent}"
-
-  # Track the latest ACTIVE revision
-  task_definition = "${aws_ecs_task_definition.main.family}:${max("${aws_ecs_task_definition.main.revision}", "${data.aws_ecs_task_definition.main.revision}")}"
-
-  network_configuration {
-    security_groups = ["${aws_security_group.default.id}", "${var.security_groups}"]
-    subnets         = ["${var.subnet_ids}"]
-  }
-
+  network_mode = "${var.network_mode}"
+  requires_compatibilities = ["${var.launch_type}"]
 }

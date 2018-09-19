@@ -31,18 +31,9 @@ module "service-<%= name %>-rds" {
   subnet_ids = "${module.vpc.private_subnet_ids}"
   zone_id = "${module.dns.private_zone_id}"
 
+  source_security_group = "${module.service-<%= name %>.security_group_id}"
+
   cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
-}
-
-resource "aws_security_group_rule" "service-<%= name %>-rds-ingress" {
-  security_group_id = "${module.service-<%= name %>-rds.security_group_id}"
-
-  type = "ingress"
-  from_port = "${module.service-<%= name %>-rds.port}"
-  to_port = "${module.service-<%= name %>-rds.port}"
-  protocol = "tcp"
-
-  source_security_group_id = "${module.service-<%= name %>.security_group_id}"
 }
 
 <%- end -%>
@@ -57,55 +48,16 @@ module "service-<%= name %>-alb" {
   name = "<%= name %>"
 
   internal = <%= ! external_lb %>
+  listener_cidr = "<%= external_lb ? '0.0.0.0/0' : '${var.vpc_cidr}' %>"
   zone_id = "${module.dns.<%= external_lb ? 'public' : 'private' %>_zone_id}"
   subnet_ids = "${module.vpc.<%= external_lb ? 'public' : 'private' %>_subnet_ids}"
   vpc_id = "${module.vpc.vpc_id}"
   logs_bucket = "${aws_s3_bucket.logs.bucket}"
 
+  destination_security_group = "${module.service-<%= name %>.security_group_id}"
   alb_certificate_arn = "${module.wildcart-cert.certificate_arn}"
 
   cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
-}
-
-resource "aws_security_group_rule" "service-<%= name %>-alb-http-ingress" {
-  security_group_id = "${module.service-<%= name %>-alb.security_group_id}"
-
-  type = "ingress"
-  from_port = 80
-  to_port = 80
-  protocol = "tcp"
-
-  <%- if external_lb -%>
-  cidr_blocks = ["0.0.0.0/0"]
-  <%- else -%>
-  cidr_blocks = ["${var.vpc_cidr}"]
-  <%- end -%>
-}
-
-resource "aws_security_group_rule" "service-<%= name %>-alb-https-ingress" {
-  security_group_id = "${module.service-<%= name %>-alb.security_group_id}"
-
-  type = "ingress"
-  from_port = 443
-  to_port = 443
-  protocol = "tcp"
-
-  <%- if external_lb -%>
-  cidr_blocks = ["0.0.0.0/0"]
-  <%- else -%>
-  cidr_blocks = ["${var.vpc_cidr}"]
-  <%- end -%>
-}
-
-resource "aws_security_group_rule" "service-<%= name %>-alb-ecs-egress" {
-  security_group_id = "${module.service-<%= name %>-alb.security_group_id}"
-
-  type = "egress"
-  from_port = 0
-  to_port = 65535
-  protocol = "tcp"
-
-  source_security_group_id = "${module.service-<%= name %>.security_group_id}"
 }
 
 <%- end -%>
@@ -117,20 +69,18 @@ resource "aws_security_group_rule" "service-<%= name %>-alb-ecs-egress" {
 //  type = "A"
 //
 //  alias {
-//    name = "${module.service-<%= name %>-alb.alb_dns_name}"
-//    zone_id = "${module.service-<%= name %>-alb.alb_zone_id}"
+//    name = "${module.service-<%= name %>-alb.lb_dns_name}"
+//    zone_id = "${module.service-<%= name %>-lb.alb_zone_id}"
 //    evaluate_target_health = true
 //  }
 //}
 
-// TODO: the secrets passed into ECS service are visible in the AWS ECS
-// Console.  This is not that huge a deal as everyone that has permissions to
-// see the console also has permissions to access the secrets via terraform. If
-// we want to change this we can make the docker entrypoint script for the ECS
-// service pull the secret direct from s3 (similar to how the parity recipe
-// does it), or we can encrypt the secret here using kms and decrypt it in the
-// docker entrypoint script for the service
-
+// Note: If you use the environment section to pass secrets directly into the
+// ECS service, they will be visible in the AWS ECS Console.  To be more secure,
+// you should store a secret with "atmos -e <env> secret set <key> <value>" then
+// reference it inside your docker image with something like:
+// https://github.com/simplygenius/atmos-example-app/blob/master/docker-entrypoint.sh
+//
 module "service-<%= name %>" {
   source = "../modules/ecs-fargate-service"
 
@@ -148,7 +98,7 @@ module "service-<%= name %>" {
 
   integrate_with_lb = <%= use_lb ? 1 : 0 %>
   <%- if use_lb -%>
-  alb_target_group_id = "${module.service-<%= name %>-alb.alb_target_group_id}"
+  alb_target_group_id = "${module.service-<%= name %>-alb.lb_target_group_id}"
   <%- end -%>
 
   cpu = 256
@@ -176,6 +126,7 @@ module "service-<%= name %>" {
             { "name" : "ATMOS_SECRET_KEYS", "value" : "DB_PASS=service_<%= name %>_db_password" },
 
 <% end %>
+            { "name" : "SVC_ENV", "value" : "${var.atmos_env}" },
             { "name" : "SVC_NAME", "value" : "$${name}" },
             { "name" : "SVC_PORT", "value" : "$${port}" }
         ],
@@ -190,26 +141,4 @@ module "service-<%= name %>" {
       }
     ]
 TMPL
-}
-
-resource "aws_security_group_rule" "service-<%= name %>-ecs-ingress" {
-  security_group_id = "${module.service-<%= name %>.security_group_id}"
-
-  type = "ingress"
-  from_port = 0
-  to_port = 65535
-  protocol = "tcp"
-
-  source_security_group_id = "${module.service-<%= name %>-alb.security_group_id}"
-}
-
-resource "aws_security_group_rule" "service-<%= name %>-ecs-egress" {
-  security_group_id = "${module.service-<%= name %>.security_group_id}"
-
-  type = "egress"
-  from_port = 0
-  to_port = 65535
-  protocol = "tcp"
-
-  cidr_blocks = ["0.0.0.0/0"]
 }

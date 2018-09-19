@@ -37,14 +37,22 @@ variable "security_groups" {
   default = []
 }
 
+variable "destination_security_group" {
+  description = "The destination's security group used for adding rules to give listeners access"
+}
+
 variable "listener_port" {
   description = "The port to listen on, 80 by default"
   default = "80"
 }
 
-variable "listener_protocol" {
-  description = "The protocol for the listen port, HTTP by default"
-  default = "HTTP"
+variable "listener_https_port" {
+  description = "The https port to listen on, 443 by default"
+  default = "443"
+}
+
+variable "listener_cidr" {
+  description = "The cidr used to grant ingress to the load balancer"
 }
 
 variable "enable_https" {
@@ -82,55 +90,36 @@ variable "idle_timeout" {
 }
 
 variable "destination_port" {
-  description = "The destination port of the container.  Only needed if we aren't using with ECS, as our ecs service module links dynamic ports to the target_groups"
+  description = "The destination port of the container.  If destination_port_to is set, this will be the from port, otherwise it is used as both from/to"
   // The terraform config always requires the port to be set in the target
   // group, so we default to 80 as a stub
   default = 80
 }
 
-variable "destination_protocol" {
-  description = "The destination protocol of the container"
-  default = "HTTP"
+variable "destination_port_to" {
+  description = "The 'to' destination port of the container.  Only needs to be set when using a port range, e.g. to connect LB to the ephemeral port range in ECS bridge mode"
+  default = ""
 }
 
-variable "health_check_interval" {
-  description = "Time period in secs between health checks"
-  default = 30
+variable "health_check" {
+  description = "A map containing the values to configure the health check for the target"
+  type = "map"
+  default = {
+    interval = 30
+    path = "/"
+    port = "traffic-port"
+    protocol = "HTTP"
+    timeout = 5
+    healthy_threshold = 2
+    unhealthy_threshold = 2
+    matcher = 200
+  }
 }
 
-variable "health_check_path" {
-  description = "The url path to hit on the app server to determine health"
-  default = "/"
-}
-
-variable "health_check_port" {
-  description = "The port for the load balancer to determine health"
-  default = "traffic-port"
-}
-
-variable "health_check_protocol" {
-  description = "The protocol for the load balancer to determine health"
-  default = "HTTP"
-}
-
-variable "health_check_timeout" {
-  description = "Timeout when connecting to determine health"
-  default = 5
-}
-
-variable "health_check_healthy_threshold" {
-  description = "The number of health checks that need to pass before marking healthy"
-  default = 2
-}
-
-variable "health_check_unhealthy_threshold" {
-  description = "The number of health checks that need to fail before marking unhealthy"
-  default = 2
-}
-
-variable "health_check_matcher" {
-  description = "The http code meaning success (single, csv or dashed-range)"
-  default = 200
+variable "health_check_override" {
+  description = "Convenience to allow overriding a subset of the health_check default values"
+  type = "map"
+  default = {}
 }
 
 variable "host_format" {

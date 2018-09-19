@@ -108,3 +108,19 @@ variable "cloudwatch_alarm_target" {
   description = "The target of cloudwatch alarm_actions, usually an sns topic"
   default = ""
 }
+
+variable "launch_type" {
+  description = "The launch type for the ecs service.  Can be one of FARGATE or EC2"
+  default = "FARGATE"
+}
+
+variable "network_mode" {
+  description = "The network mode for ecs tasks"
+  default = "awsvpc"
+}
+
+variable "volumes" {
+  description = "The volumes to use for the containers"
+  type = "list"
+  default = []
+}

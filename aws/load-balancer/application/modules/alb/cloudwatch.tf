@@ -16,7 +16,7 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy-hosts" {
   alarm_actions       = ["${var.cloudwatch_alarm_target}"]
 
   dimensions {
-    LoadBalancer = "${aws_alb.main.arn_suffix}"
+    LoadBalancer = "${aws_lb.main.arn_suffix}"
   }
 }
 
@@ -38,6 +38,6 @@ resource "aws_cloudwatch_metric_alarm" "too-many-500s" {
   alarm_actions       = ["${var.cloudwatch_alarm_target}"]
 
   dimensions {
-    LoadBalancer = "${aws_alb.main.arn_suffix}"
+    LoadBalancer = "${aws_lb.main.arn_suffix}"
   }
 }
