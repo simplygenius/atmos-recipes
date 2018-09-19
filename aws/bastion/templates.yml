@@ -1,0 +1,11 @@
+description: Template for instantiating an instance group from user input
+dependent_templates:
+  - name: aws/instance-group
+    context:
+      aws:
+        instance_group:
+          name: bastion
+          auto_scale: false
+          load_balancer: :external
+          lb_type: :network
+          port: 22
