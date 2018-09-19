@@ -1,5 +1,3 @@
-<%- if name -%>
-
 module "instance-group-<%= name %>" {
   source = "../modules/instance-group-dynamic"
 
@@ -13,7 +11,7 @@ module "instance-group-<%= name %>" {
 
   vpc_id = "${module.vpc.vpc_id}"
   subnet_ids = "${module.vpc.private_subnet_ids}"
-  security_groups = ["${module.vpc.default_security_group_id}"]
+  security_groups = ["${module.vpc.security_group_ids}"]
 
   image_id = "${lookup(var.instance_images, "<%= name %>", local.instance_images_default)}"
   instance_type = "${lookup(var.instance_types, "<%= name %>", var.instance_types_default)}"
@@ -24,6 +22,10 @@ module "instance-group-<%= name %>" {
   max_scale_factor = "${var.instance_max_count_scale_factor}"
   <%- end -%>
   cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
+
+  <%- if load_balancer != :none -%>
+  target_groups = ["${module.instance-group-load-balancer-<%= name %>.lb_target_group_id}"]
+  <%- end -%>
 
   user_data = "${module.instance-group-userdata-<%= name %>.rendered}"
 }
@@ -66,4 +68,37 @@ module "instance-group-autoscale-<%= name %>" {
 
 <%- end # auto_scale -%>
 
-<%- end # name -%>
+<%- if load_balancer != :none -%>
+
+module "instance-group-load-balancer-<%= name %>" {
+  <%- if lb_type == :network -%>
+  source = "../modules/nlb"
+  <%- else -%>
+  source = "../modules/alb"
+  <%- end -%>
+
+  atmos_env = "${var.atmos_env}"
+  global_name_prefix = "${var.global_name_prefix}"
+  local_name_prefix = "${var.local_name_prefix}"
+  name = "<%= name %>"
+
+  internal = <%= load_balancer == :internal %>
+  listener_cidr = "<%= load_balancer == :external ? '0.0.0.0/0' : '${var.vpc_cidr}' %>"
+  zone_id = "${module.dns.<%= load_balancer == :external ? 'public' : 'private' %>_zone_id}"
+  subnet_ids = "${module.vpc.<%= load_balancer == :external  ? 'public' : 'private' %>_subnet_ids}"
+  vpc_id = "${module.vpc.vpc_id}"
+  logs_bucket = "${aws_s3_bucket.logs.bucket}"
+
+  target_type = "instance"
+  <%- if lb_type == :network -%>
+  listener_port = "<%= port %>"
+  destination_port = "<%= port %>"
+  <%- else -%>
+  alb_certificate_arn = "${module.wildcart-cert.certificate_arn}"
+  <%- end -%>
+  destination_security_group = "${module.instance-group-<%= name %>.security_group_id}"
+
+  cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
+}
+
+<%- end # load_balancer -%>

@@ -47,6 +47,7 @@ resource "aws_autoscaling_group" "main" {
     "${var.subnet_ids}"]
   load_balancers = [
     "${var.load_balancers}"]
+  target_group_arns = ["${var.target_groups}"]
 
   tag = {
     key = "Source"

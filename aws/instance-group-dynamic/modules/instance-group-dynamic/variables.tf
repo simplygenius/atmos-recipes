@@ -109,7 +109,13 @@ variable "ephemeral_block_devices" {
 }
 
 variable "load_balancers" {
-  description = "The ELB instances to associate the ASG with"
+  description = "The ELB instances to associate the ASG with (use target_groups for ALBs)"
+  type = "list"
+  default = []
+}
+
+variable "target_groups" {
+  description = "The ALB target group arns to associate the ASG with (use load_balancers for ELBs)"
   type = "list"
   default = []
 }
