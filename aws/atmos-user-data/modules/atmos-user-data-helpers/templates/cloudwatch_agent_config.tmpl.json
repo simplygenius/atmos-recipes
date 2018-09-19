@@ -52,6 +52,10 @@
             "log_group_name": "/var/log/user-data.log"
           },
           {
+            "file_path": "/var/log/ecs/ecs-agent.log.*",
+            "log_group_name": "/var/log/ecs/ecs-agent.log"
+          },
+          {
             "file_path": "/var/log/amazon/ssm/amazon-ssm-agent.log",
             "log_group_name": "/var/log/amazon/ssm/amazon-ssm-agent.log"
           },
