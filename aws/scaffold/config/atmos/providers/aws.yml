@@ -1,3 +1,11 @@
+# Provider specific overrides for the aws provider
+#
+# You can add overrides for other providers by creating a <provider>.yml file in
+# this directory where <provider> is the provider name.
+#
+# Overrides in this file should NOT be scoped under a "providers ->
+# <provider>" hash like they need to be in atmos.yml
+#
 region: us-east-1
 auth:
   session_duration: 3600
