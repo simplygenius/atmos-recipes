@@ -13,8 +13,10 @@ auth:
   bootstrap_assume_role_name: "OrganizationAccountAccessRole"
 backend:
   type: s3
+  # global_name_prefix contains atmos_env, so results in a different bucket and dynamodb table per env
   bucket: "#{global_name_prefix}terraform-state"
-  key: "terraform.tfstate"
+  # Use a different state file per working group, e.g. bootstrap vs default
+  key: "#{atmos_working_group}-terraform.tfstate"
   region: "#{region}"
   encrypt: true
   dynamodb_table: "#{global_name_prefix}atmos-terraform-lock"

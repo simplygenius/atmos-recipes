@@ -16,6 +16,14 @@ variable "account_ids" {
   type = "map"
 }
 
+variable "atmos_working_group" {
+  description = <<-EOF
+    The atmos working group - independent groupings of terraform recipes within
+    the same env, e.g. bootstrap, default, value supplied by atmos runtime
+  EOF
+  type = "string"
+}
+
 variable "atmos_config" {
   description = <<-EOF
     The atmos config hash, value supplied by atmos runtime.  Convenience to allow
