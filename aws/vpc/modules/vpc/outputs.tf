@@ -28,6 +28,16 @@ output "private_route_table_ids" {
   value = "${aws_route_table.private.*.id}"
 }
 
+output "nat_gateway_ids" {
+  description = "The NAT gateway IDs"
+  value = "${aws_nat_gateway.default.*.id}"
+}
+
+output "internet_gateway_id" {
+  description = "The Internet Gateway ID"
+  value = "${aws_internet_gateway.default.id}"
+}
+
 locals {
   default_sg = "${element(concat(
     aws_default_security_group.default-both.*.id,

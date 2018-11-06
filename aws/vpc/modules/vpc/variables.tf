@@ -27,6 +27,11 @@ variable "enable_nat" {
   default = 1
 }
 
+variable "enable_redundant_nat" {
+  description = "Enable redundant provisioning of NAT gateways, one per AZ vs one for entire vpc"
+  default = 1
+}
+
 variable "vpc_tenancy" {
   description = "Instance tenancy for the VPC"
   default = "default"
@@ -115,7 +120,13 @@ data "template_file" "public_subnet_cidrs" {
 }
 
 locals {
-  nat_enablement = "${signum(var.enable_nat) == 1 ? 1 : 0}"
   private_subnet_cidrs = "${data.template_file.private_subnet_cidrs.*.rendered}"
   public_subnet_cidrs = "${data.template_file.public_subnet_cidrs.*.rendered}"
+
+  nat_enablement = "${signum(var.enable_nat) == 1 ? 1 : 0}"
+  nat_redundancy = "${signum(var.enable_redundant_nat) == 1 ? 1 : 0}"
+  // When doing redundant NATs, add a NAT to each public subnet.  Since the
+  // pubic subnets are setup to be 1:1 with the AZs, we use the public subnet
+  // count for the NAT count
+  nat_count = "${(local.nat_redundancy == 0 ? 1 : length(local.public_subnet_cidrs)) * local.nat_enablement}"
 }

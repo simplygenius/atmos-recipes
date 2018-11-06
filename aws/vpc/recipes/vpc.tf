@@ -13,6 +13,11 @@ variable "vpc_enable_nat" {
   default = "1"
 }
 
+variable "vpc_enable_redundant_nat" {
+  description = "Enable redundant provisioning of NAT gateways, one per AZ vs one for entire vpc"
+  default = "1"
+}
+
 variable "permissive_default_security_group" {
   description = <<-EOF
     Sets up the default security group to allow permissive internal ingress,
@@ -43,6 +48,7 @@ module "vpc" {
   az_count = "${var.az_count}"
   vpc_cidr = "${var.vpc_cidr}"
   enable_nat = "${var.vpc_enable_nat}"
+  enable_redundant_nat = "${var.vpc_enable_redundant_nat}"
 
   permissive_default_security_group = "${var.permissive_default_security_group}"
 }

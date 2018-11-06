@@ -9,15 +9,13 @@ resource "aws_internet_gateway" "default" {
 }
 
 resource "aws_eip" "nat_gateway_ip" {
-  count = "${length(local.public_subnet_cidrs) * local.nat_enablement}"
+  count = "${local.nat_count}"
 
   vpc = true
 }
 
-// We want one nat gateway per AZ, and since the pubic subnets are setup to be
-// 1:1 with the AZs, we use those for the count
 resource "aws_nat_gateway" "default" {
-  count = "${length(local.public_subnet_cidrs) * local.nat_enablement}"
+  count = "${local.nat_count}"
 
   allocation_id = "${aws_eip.nat_gateway_ip.*.id[count.index]}"
   subnet_id = "${aws_subnet.public.*.id[count.index]}"

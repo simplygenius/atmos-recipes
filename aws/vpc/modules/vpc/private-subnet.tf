@@ -30,7 +30,10 @@ resource "aws_route" "private-nat" {
 
   route_table_id = "${aws_route_table.private.*.id[count.index]}"
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id = "${aws_nat_gateway.default.*.id[count.index]}"
+  // If just one NAT, then each private subnet will point to to it.  If
+  // redundant NATs, then each private subnet will point to the NAT in its AZ
+  // since private-subnets:public-subnets:AZs are 1:1:1
+  nat_gateway_id = "${aws_nat_gateway.default.*.id[(count.index % local.nat_count)]}"
 }
 
 resource "aws_route_table_association" "private" {
