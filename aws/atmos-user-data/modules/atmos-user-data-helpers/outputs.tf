@@ -5,7 +5,12 @@ output "config" {
 
 output "policies" {
   description = "IAM Policies required by the files produced by this module, typically attached to an instance role (list of maps with name, policy keys)"
-  value = "${local.policies}"
+  value = "${data.null_data_source.policies.*.outputs}"
+}
+
+output "policy_count" {
+  description = "Count of IAM Policies"
+  value = "${length(local.policy_names)}"
 }
 
 output "files" {

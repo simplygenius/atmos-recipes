@@ -1,5 +1,5 @@
 data "template_file" "cloudinit-file-entry" {
-  count = "${length(var.files)}"
+  count = "${var.file_count}"
   // NOTE: Ensures generated yml is indented correctly by replacing newine with newline+spaces
   template = "${file("${path.module}/file_entry.tmpl.yml")}"
 

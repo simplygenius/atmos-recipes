@@ -30,116 +30,33 @@ data "template_file" "sync_iam_users" {
     }
 }
 
+data "template_file" "policies" {
+  count = "${length(local.policy_names)}"
+  template = "${file("${path.module}/policies/${local.policy_names[count.index]}.tmpl.json")}"
+
+  vars {
+    zone_id = "${var.zone_id}"
+    locak_table = "${var.lock_table}"
+  }
+}
+
+data "null_data_source" "policies" {
+  count = "${length(local.policy_names)}"
+
+  inputs ={
+    name = "${var.local_name_prefix}${var.name}-${local.policy_names[count.index]}"
+    policy = "${data.template_file.policies.*.rendered[count.index]}"
+  }
+}
+
 locals {
-  policies = [
-    {
-      name = "${var.local_name_prefix}${var.name}-set-name-tag"
-      policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ec2:DescribeInstances",
-        "ec2:DescribeTags",
-        "ec2:CreateTags",
-        "sdb:ListDomains",
-        "sdb:CreateDomain",
-        "sdb:PutAttributes",
-        "sdb:GetAttributes",
-        "sdb:DeleteAttributes"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-POLICY
-    },
-    {
-      name = "${var.local_name_prefix}${var.name}-update-route53"
-      policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "route53:TestDNSAnswer",
-        "route53:ChangeResourceRecordSets"
-      ],
-      "Resource": "arn:aws:route53:::hostedzone/${var.zone_id}"
-    }
-  ]
-}
-POLICY
-    },
-    {
-      name = "${var.local_name_prefix}${var.name}-update-ses"
-      policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ses:SendRawEmail"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-POLICY
-    },
-    {
-      name = "${var.local_name_prefix}${var.name}-update-dynamodb-lock-table"
-      policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:GetItem",
-        "dynamodb:PutItem",
-        "dynamodb:DeleteItem"
-      ],
-      "Resource": "arn:aws:dynamodb:*:*:table/${var.lock_table}"
-    }
-  ]
-}
-POLICY
-    },
-    {
-      name = "${var.local_name_prefix}${var.name}-cloudwatch-agent"
-      policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "cloudwatch:PutMetricData",
-        "ec2:DescribeTags",
-        "logs:PutLogEvents",
-        "logs:DescribeLogStreams",
-        "logs:DescribeLogGroups",
-        "logs:CreateLogStream",
-        "logs:CreateLogGroup"
-      ],
-      "Resource": "*"
-      },
-      {
-      "Effect": "Allow",
-      "Action": [
-        "ssm:GetParameter"
-      ],
-      "Resource": "arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*"
-      }
-  ]
-}
-POLICY
-    }
+
+  policy_names = [
+    "set-name-tag",
+    "update-route53",
+    "update-ses",
+    "update-dynamodb-lock-table",
+    "cloudwatch-agent"
   ]
 
   files = [

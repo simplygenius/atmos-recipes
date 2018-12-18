@@ -46,21 +46,25 @@ locals {
       content = "${var.additional_user_data}"
       owner = "root:root"
       permissions = "0755"
-    },
+    }
+  ]
+  env_user_data_file =
     {
       path = "/etc/profile.d/atmos_env.sh"
       content = "${data.template_file.environment.rendered}"
       owner = "root:root"
       permissions = "0755"
     }
-  ]
-  user_data_files = "${concat(local.implicit_user_data_files, var.additional_user_data_files)}"
 
+  partial_user_data_files = "${concat(local.implicit_user_data_files, var.additional_user_data_files)}"
+  user_data_file_count = "${length(local.partial_user_data_files) + 1}"
+  user_data_files = "${concat(local.env_user_data_file, list(local.env_user_data_file))}"
 }
 
 module "user-data-files" {
   source = "../../modules/cloudinit-files"
   files = "${local.user_data_files}"
+  file_count = "${local.user_data_file_count}"
 }
 
 data "template_cloudinit_config" "user-data" {
