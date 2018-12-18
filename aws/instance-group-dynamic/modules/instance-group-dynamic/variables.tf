@@ -161,3 +161,9 @@ variable "cloudwatch_alarm_target" {
   description = "The target of cloudwatch alarm_actions, usually an sns topic"
   default = ""
 }
+
+variable "tags" {
+  description = "List of maps representing tag blocks for the auto scaling group"
+  type = "list"
+  default = []
+}

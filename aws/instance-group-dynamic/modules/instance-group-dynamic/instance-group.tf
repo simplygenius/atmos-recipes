@@ -49,11 +49,10 @@ resource "aws_autoscaling_group" "main" {
     "${var.load_balancers}"]
   target_group_arns = ["${var.target_groups}"]
 
-  tag = {
-    key = "Source"
-    value = "terraform"
-    propagate_at_launch = true
-  }
+  tags = ["${concat(
+      list(map("key", "Source", "value", "terraform", "propagate_at_launch", true)),
+      var.tags
+   )}"]
 
 }
 
