@@ -1,0 +1,15 @@
+description: Elastic Container Service for Kubernetes
+dependent_templates:
+  - aws/scaffold
+  - aws/vpc
+  - aws/dns
+  - name: aws/instance-group
+    context:
+      aws:
+        instance_group:
+          skip_recipe: true
+
+optional:
+  # Always ignore since we template it through ERB to produce the recipe based
+  # on the name
+  eks_template.tf: "false"
