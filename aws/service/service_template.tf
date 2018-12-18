@@ -62,18 +62,20 @@ module "service-<%= name %>-alb" {
 
 <%- end -%>
 
-// TODO: private dns entry when external service or make alb module do it
-//resource "aws_route53_record" "service-<%= name %>-alb-internal" {
-//  zone_id = "${module.dns.private_zone_id}"
-//  name = "<%= name %>"
-//  type = "A"
-//
-//  alias {
-//    name = "${module.service-<%= name %>-alb.lb_dns_name}"
-//    zone_id = "${module.service-<%= name %>-lb.alb_zone_id}"
-//    evaluate_target_health = true
-//  }
-//}
+<%- if external_lb -%>
+// TODO: make alb module setup private dns entry when external service
+resource "aws_route53_record" "service-<%= name %>-alb-internal" {
+  zone_id = "${module.dns.private_zone_id}"
+  name = "<%= name %>"
+  type = "A"
+
+  alias {
+    name = "${module.service-<%= name %>-alb.lb_dns_name}"
+    zone_id = "${module.service-<%= name %>-alb.lb_zone_id}"
+    evaluate_target_health = true
+  }
+}
+<%- end -%>
 
 // Note: If you use the environment section to pass secrets directly into the
 // ECS service, they will be visible in the AWS ECS Console.  To be more secure,
@@ -82,7 +84,7 @@ module "service-<%= name %>-alb" {
 // https://github.com/simplygenius/atmos-example-app/blob/master/docker-entrypoint.sh
 //
 module "service-<%= name %>" {
-  source = "../modules/ecs-fargate-service"
+  source = "../modules/ecs-service"
 
   atmos_env = "${var.atmos_env}"
   global_name_prefix = "${var.global_name_prefix}"
@@ -94,7 +96,11 @@ module "service-<%= name %>" {
   cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
 
   name = "<%= name %>"
-  ecs_cluster_arn = "${aws_ecs_cluster.services.arn}"
+  ecs_cluster_arn = "${aws_ecs_cluster.<%= cluster_name %>.arn}"
+  <%- if cluster_ec2_backed -%>
+  launch_type = "EC2"
+  network_mode = "bridge"
+  <%- end -%>
 
   integrate_with_lb = <%= use_lb ? 1 : 0 %>
   <%- if use_lb -%>
