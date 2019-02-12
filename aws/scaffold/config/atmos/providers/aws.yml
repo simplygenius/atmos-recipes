@@ -23,5 +23,6 @@ backend:
 secret:
   type: s3
   bucket: "#{global_name_prefix}secrets"
+  prefix:
   region: "#{region}"
   encrypt: true
