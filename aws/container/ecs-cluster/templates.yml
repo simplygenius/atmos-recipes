@@ -3,7 +3,7 @@ dependent_templates:
   - aws/scaffold
   - aws/vpc
   - aws/dns
-  - aws/database
+  - aws/database/rds
   - aws/load-balancer/application
   - aws/container/ecs
 optional:

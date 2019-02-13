@@ -3,7 +3,7 @@ dependent_templates:
   - aws/scaffold
   - aws/vpc
   - aws/dns
-  - aws/database
+  - aws/database/rds
   - aws/load-balancer/application
 optional:
   # Always ignore since we template it through ERB to produce the recipe based

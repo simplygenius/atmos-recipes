@@ -27,7 +27,7 @@ variable "host_format" {
     The format used to register the friendly hostname in route53 -
     the formatter is passed the component name
   EOF
-  default = "%s"
+  default = "%s-db"
 }
 
 variable "vpc_id" {
