@@ -54,6 +54,12 @@ module "service-<%= name %>-alb" {
   vpc_id = "${module.vpc.vpc_id}"
   logs_bucket = "${aws_s3_bucket.logs.bucket}"
 
+  <%- if cluster_ec2_backed -%>
+  target_type = "instance"
+  destination_port = 32768
+  destination_port_to = 61000
+  <%- end -%>
+
   destination_security_group = "${module.service-<%= name %>.security_group_id}"
   alb_certificate_arn = "${module.wildcart-cert.certificate_arn}"
 
@@ -123,7 +129,7 @@ module "service-<%= name %>" {
         ],
         "environment" : [
             { "name" : "ATMOS_ENV", "value" : "${var.atmos_env}" },
-<% if rds %>
+<% if use_rds %>
             { "name" : "DB_HOST", "value" : "${module.service-<%= name %>-rds.hostname}" },
             { "name" : "DB_PORT", "value" : "${module.service-<%= name %>-rds.port}" },
             { "name" : "DB_NAME", "value" : "${module.service-<%= name %>-rds.database}" },
