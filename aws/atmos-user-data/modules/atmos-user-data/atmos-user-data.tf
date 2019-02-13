@@ -40,7 +40,7 @@ module "user-data-framework" {
 
 locals {
   policies = "${concat(module.user-data-helpers.policies, var.policies)}"
-  policy_count = "${length(module.user-data-helpers.policy_count) + length(var.policies)}"
+  policy_count = "${module.user-data-helpers.policy_count + length(var.policies)}"
 }
 
 resource "aws_iam_role_policy" "policies" {
