@@ -8,7 +8,7 @@
         "dynamodb:PutItem",
         "dynamodb:DeleteItem"
       ],
-      "Resource": "arn:aws:dynamodb:*:*:table/${var.lock_table}"
+      "Resource": "arn:aws:dynamodb:*:*:table/${lock_table}"
     }
   ]
 }

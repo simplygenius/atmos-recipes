@@ -36,7 +36,7 @@ data "template_file" "policies" {
 
   vars {
     zone_id = "${var.zone_id}"
-    locak_table = "${var.lock_table}"
+    lock_table = "${var.lock_table}"
   }
 }
 
