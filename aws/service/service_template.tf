@@ -55,9 +55,16 @@ module "service-<%= name %>-alb" {
   logs_bucket = "${aws_s3_bucket.logs.bucket}"
 
   <%- if cluster_ec2_backed -%>
+  // If using ENIs instead of bridge networking on the ecs service, then you
+  // should link using the actual port rather than the range.  ENI count per
+  // instance has low limits, so bridge networking, while less performant,
+  // allows you to run more services per instance
+  // e.g. destination_port = "${module.service-<%= name %>.port}"
   target_type = "instance"
   destination_port = 32768
   destination_port_to = 61000
+  <%- else -#>
+  destination_port = "${module.service-<%= name %>.port}"
   <%- end -%>
 
   destination_security_group = "${module.service-<%= name %>.security_group_id}"
