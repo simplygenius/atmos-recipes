@@ -1,6 +1,10 @@
 # Variables for the aws/dns template
 #
 
-# primary domain lives in the production environment
-domain: "#{atmos_env == 'prod' ? '' : atmos_env + '.' }linksquares.com"
+# You may want your primary domain to live in your production environment
+# domain: "#{atmos_env == 'prod' ? '' : atmos_env + '.' }mydomain.com"
+#
+domain:
+
+# Seamless cleanup in dev environments
 force_destroy_zones: "#{is_dev}"
