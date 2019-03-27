@@ -99,6 +99,9 @@ module "service-<%= name %>" {
 
   vpc_id = "${module.vpc.vpc_id}"
   subnet_ids = "${module.vpc.private_subnet_ids}"
+  // The default security groups allow outbound to internet which is required for
+  // pulling docker image from ECR
+  security_groups = ["${module.vpc.security_group_ids}"]
   cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
 
   name = "<%= name %>"
