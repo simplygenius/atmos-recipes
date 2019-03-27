@@ -5,8 +5,14 @@ resource "aws_security_group" "default" {
 
 data "aws_caller_identity" "current" {}
 
-data "template_file" "access_policy" {
+// double-dollar in variable default declaration doesn't work properly
+// https://github.com/hashicorp/terraform/issues/18069
+data "template_file" "access_policy_dummy" {
   template = "${var.access_policy_template}"
+}
+
+data "template_file" "access_policy" {
+  template = "${data.template_file.access_policy_dummy.rendered}"
 
   vars {
     account_id     = "${data.aws_caller_identity.current.account_id}"
