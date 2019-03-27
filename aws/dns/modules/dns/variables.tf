@@ -26,3 +26,8 @@ variable "domain" {
   description = "The primary domain name"
 }
 
+variable "force_destroy" {
+  description = "Force destroy zones, even if they have some data"
+  default = false
+}
+

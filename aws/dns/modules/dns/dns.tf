@@ -1,5 +1,6 @@
 resource "aws_route53_zone" "public" {
   name = "${var.domain}"
+  force_destroy = "${var.force_destroy}"
 
   tags {
     Name = "${var.local_name_prefix}public-zone"
@@ -11,6 +12,7 @@ resource "aws_route53_zone" "public" {
 resource "aws_route53_zone" "private" {
   name = "${var.domain}"
   vpc_id = "${var.vpc_id}"
+  force_destroy = "${var.force_destroy}"
 
   tags {
     Name = "${var.local_name_prefix}private-zone"
