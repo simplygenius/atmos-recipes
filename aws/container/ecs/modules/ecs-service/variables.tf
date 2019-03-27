@@ -42,7 +42,7 @@ variable "memory" {
 
 variable "port" {
   description = "The service port"
-  default = 8000
+  default = 80
 }
 
 variable "vpc_id" {
