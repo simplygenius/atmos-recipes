@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# fail fast
+set -e
+
+/opt/atmos/bin/sync_iam_users.sh

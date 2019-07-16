@@ -1,0 +1,7 @@
+description: DNS and certificate resources for a AWS VPC
+dependent_templates:
+  - aws/scaffold
+  - aws/vpc
+  - aws/dns
+optional:
+  config/atmos/website.yml: ! new_keys?("#{template_dir}/config/atmos/static-website.yml", "config/atmos/static-website.yml")

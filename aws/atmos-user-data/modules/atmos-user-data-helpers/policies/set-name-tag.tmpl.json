@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeTags",
+        "ec2:CreateTags",
+        "sdb:ListDomains",
+        "sdb:CreateDomain",
+        "sdb:PutAttributes",
+        "sdb:GetAttributes",
+        "sdb:DeleteAttributes"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

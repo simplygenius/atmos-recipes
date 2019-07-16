@@ -1,0 +1,11 @@
+description: Template for instantiating an instance group from user input
+dependent_templates:
+  - aws/atmos-user-data
+  - aws/permissions
+  - aws/load-balancer/application
+  - aws/load-balancer/network
+  - aws/instance-group-dynamic
+optional:
+  # Always ignore since we template it through ERB to produce the recipe based
+  # on the instance group name
+  instance_group_template.tf: "false"

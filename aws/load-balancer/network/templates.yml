@@ -1,0 +1,5 @@
+description: Modules to define a network load balancer
+dependent_templates:
+  - aws/scaffold
+  - aws/vpc
+  - aws/dns

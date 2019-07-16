@@ -1,0 +1,13 @@
+description: Elastic Container Service using EC2
+dependent_templates:
+  - aws/scaffold
+  - aws/vpc
+  - aws/dns
+  - aws/container/ecs
+  - name: aws/instance-group
+    context:
+      aws:
+        instance_group:
+          name: ecs
+          auto_scale: true
+          load_balancer: :none
