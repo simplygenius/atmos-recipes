@@ -5,7 +5,7 @@
 resource "aws_iam_group" "env-admin" {
   count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
 
-  name = "${var.all_env_names[count.index]}-admin"
+  name = "${var.org_prefix}${var.all_env_names[count.index]}-admin"
   path = "/"
 }
 
@@ -15,7 +15,7 @@ data "template_file" "policy-allow-assume-env-role" {
   vars {
     account_id = "${lookup(var.account_ids, var.all_env_names[count.index])}"
     // don't use auth_assume_role_name as it is based on current atmos_env
-    role_name = "${var.all_env_names[count.index]}-admin"
+    role_name = "${var.org_prefix}${var.all_env_names[count.index]}-admin"
   }
 
   template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
@@ -24,7 +24,7 @@ data "template_file" "policy-allow-assume-env-role" {
 resource "aws_iam_group_policy" "env-admin" {
   count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
 
-  name = "allow-assume-role-to-${var.all_env_names[count.index]}"
+  name = "allow-assume-role-to-${var.org_prefix}${var.all_env_names[count.index]}"
   group = "${aws_iam_group.env-admin.*.id[count.index]}"
   policy = "${data.template_file.policy-allow-assume-env-role.*.rendered[count.index]}"
 }
@@ -45,8 +45,8 @@ data "template_file" "policy-allow-assume-env-role-for-bootstrap" {
 resource "aws_iam_group_policy" "ops-bootstrap-admin" {
   count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) : 0}"
 
-  name = "allow-bootstrap-assume-role-to-${local.envs_without_ops[count.index]}"
-  group = "ops-admin"
+  name = "allow-bootstrap-assume-role-to-${var.org_prefix}${local.envs_without_ops[count.index]}"
+  group = "${var.org_prefix}ops-admin"
   policy = "${data.template_file.policy-allow-assume-env-role-for-bootstrap.*.rendered[count.index]}"
 
   depends_on = ["aws_iam_group.env-admin"]
@@ -60,7 +60,7 @@ data "template_file" "policy-allow-assume-env-role-to-env-for-ops" {
   vars {
     account_id = "${lookup(var.account_ids, local.envs_without_ops[count.index])}"
     // don't use auth_assume_role_name as it is based on current atmos_env
-    role_name = "${local.envs_without_ops[count.index]}-admin"
+    role_name = "${var.org_prefix}${local.envs_without_ops[count.index]}-admin"
   }
 
   template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
@@ -69,8 +69,8 @@ data "template_file" "policy-allow-assume-env-role-to-env-for-ops" {
 resource "aws_iam_group_policy" "ops-env-admin" {
   count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) * var.ops_admins_env : 0}"
 
-  name = "allow-assume-role-to-${local.envs_without_ops[count.index]}-for-ops"
-  group = "ops-admin"
+  name = "allow-assume-role-to-${var.org_prefix}${local.envs_without_ops[count.index]}-for-ops"
+  group = "${var.org_prefix}ops-admin"
   policy = "${data.template_file.policy-allow-assume-env-role-to-env-for-ops.*.rendered[count.index]}"
 
   depends_on = ["aws_iam_group.env-admin"]
@@ -79,7 +79,7 @@ resource "aws_iam_group_policy" "ops-env-admin" {
 resource "aws_iam_group" "all-users" {
   count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
-  name = "all-users"
+  name = "${var.org_prefix}all-users"
   path = "/"
 }
 
@@ -100,7 +100,7 @@ data "template_file" "policy-self-management" {
 resource "aws_iam_group_policy" "self-management" {
   count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
-  name = "self-management"
+  name = "${var.org_prefix}self-management"
   group = "${aws_iam_group.all-users.name}"
 
   policy = "${data.template_file.policy-self-management.rendered}"
@@ -116,7 +116,7 @@ data "template_file" "policy-assume-env-deployer-role" {
 }
 
 resource "aws_iam_role" "deployer" {
-  name               = "${var.atmos_env}-deployer"
+  name               = "${var.org_prefix}${var.atmos_env}-deployer"
   path               = "/"
   assume_role_policy = "${data.template_file.policy-assume-env-deployer-role.rendered}"
 }
@@ -124,7 +124,7 @@ resource "aws_iam_role" "deployer" {
 resource "aws_iam_user" "deployer" {
   count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
-  name = "deployer"
+  name = "${var.org_prefix}deployer"
   path = "/"
 }
 
@@ -134,7 +134,7 @@ data "template_file" "policy-allow-assume-env-role-for-deployer" {
   vars {
     account_id = "${lookup(var.account_ids, var.all_env_names[count.index])}"
     // don't use auth_assume_role_name as it is based on current atmos_env
-    role_name = "${var.all_env_names[count.index]}-deployer"
+    role_name = "${var.org_prefix}${var.all_env_names[count.index]}-deployer"
   }
 
   template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
@@ -143,7 +143,7 @@ data "template_file" "policy-allow-assume-env-role-for-deployer" {
 resource "aws_iam_user_policy" "deployer" {
   count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
 
-  name = "allow-assume-role-to-${var.all_env_names[count.index]}-deployer"
+  name = "allow-assume-role-to-${var.org_prefix}${var.all_env_names[count.index]}-deployer"
   user = "${aws_iam_user.deployer.name}"
 
   policy = "${data.template_file.policy-allow-assume-env-role-for-deployer.*.rendered[count.index]}"
@@ -169,7 +169,7 @@ module "display-access-keys" {
 }
 
 resource "aws_iam_role_policy" "deployer" {
-  name = "${var.atmos_env}-deployer"
+  name = "${var.org_prefix}${var.atmos_env}-deployer"
   role = "${aws_iam_role.deployer.name}"
 
   policy = "${file("../templates/policy-deployer-permissions.json")}"

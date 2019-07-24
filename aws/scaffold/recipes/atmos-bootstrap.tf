@@ -81,14 +81,14 @@ data "template_file" "policy-assume-env-role" {
 }
 
 resource "aws_iam_role" "env-admin" {
-  name  = "${var.atmos_env}-admin"
+  name  = "${var.org_prefix}${var.atmos_env}-admin"
   path  = "/"
 
   assume_role_policy = "${data.template_file.policy-assume-env-role.rendered}"
 }
 
 resource "aws_iam_role_policy" "env-admin" {
-  name = "${var.atmos_env}-admin"
+  name = "${var.org_prefix}${var.atmos_env}-admin"
   role = "${aws_iam_role.env-admin.name}"
 
   policy = "${file("../templates/policy-allow-all.json")}"

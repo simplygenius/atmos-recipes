@@ -9,7 +9,7 @@
 region: us-east-1
 auth:
   session_duration: 3600
-  assume_role_name: "#{atmos_env}-admin"
+  assume_role_name: "#{org_prefix}#{atmos_env}-admin"
   bootstrap_assume_role_name: "OrganizationAccountAccessRole"
 backend:
   type: s3

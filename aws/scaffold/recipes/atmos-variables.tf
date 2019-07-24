@@ -33,12 +33,20 @@ variable "atmos_config" {
   type = "map"
 }
 
+variable "org" {
+  description = "The atmos organization, value supplied by atmos.yml"
+}
+
 variable "global_name_prefix" {
   description = "The prefix used to disambiguate global resource names, value supplied by atmos.yml"
 }
 
 variable "local_name_prefix" {
   description = "The prefix used to disambiguate local resource names, value supplied by atmos.yml"
+}
+
+variable "org_prefix" {
+  description = "The prefix used to disambiguate ops resource names for multiple orgs, value supplied by atmos.yml"
 }
 
 variable "region" {
