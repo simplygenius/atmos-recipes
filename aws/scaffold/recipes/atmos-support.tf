@@ -17,7 +17,7 @@ ${var.local_name_prefix}${var.ops_alerts_topic}
 resource "aws_sns_topic" "ops-alerts" {
   count = "${var.ops_alerts_topic == "" ? 0 : 1}"
   name = "${var.local_name_prefix}${var.ops_alerts_topic}"
-  display_name = "Ops Alerts for ${var.org_prefix}${var.atmos_env}"
+  display_name = "Ops Alerts for the ${var.org_prefix}${var.atmos_env} environment"
 
   provisioner "local-exec" {
     command = "$ATMOS_IPC_CLIENT '${local.subscribe_topic_ipc}'"
