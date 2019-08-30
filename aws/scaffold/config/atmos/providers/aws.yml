@@ -17,12 +17,12 @@ backend:
   bucket: "#{global_name_prefix}terraform-state"
   # Use a different state file per working group, e.g. bootstrap vs default
   key: "#{atmos_working_group}-terraform.tfstate"
-  region: "#{region}"
+  region: "#{_root_.region}"
   encrypt: true
   dynamodb_table: "#{global_name_prefix}atmos-terraform-lock"
 secret:
   type: s3
   bucket: "#{global_name_prefix}secrets"
   prefix:
-  region: "#{region}"
+  region: "#{_root_.region}"
   encrypt: true
