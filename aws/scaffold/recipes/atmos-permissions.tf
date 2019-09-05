@@ -175,6 +175,15 @@ resource "aws_iam_role_policy" "deployer" {
   policy = "${file("../templates/policy-deployer-permissions.json")}"
 }
 
+resource "aws_iam_group_policy" "allow-billing-access" {
+  count = "${var.atmos_env == local.ops_env ? 1 : 0}"
+
+  name = "${var.org_prefix}allow-billing-access"
+  group = "${var.org_prefix}ops-admin"
+
+  policy = "${file("../templates/policy-allow-all-billing.json")}"
+}
+
 resource "aws_iam_account_password_policy" "strict" {
   minimum_password_length        = 12
   require_lowercase_characters   = true
