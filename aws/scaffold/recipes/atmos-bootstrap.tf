@@ -38,6 +38,8 @@ data "template_file" "policy-secret-bucket" {
 // We want secret storage setup in bootstrap so that immediately after
 // bootstrap, we can apply a full environment that may have secrets
 resource "aws_s3_bucket" "secret" {
+  count = "${lookup(var.secret, "type") == "s3" ? 1 : 0}"
+
   bucket = "${lookup(var.secret, "bucket")}"
   acl = "private"
   force_destroy = "${var.force_destroy_buckets}"

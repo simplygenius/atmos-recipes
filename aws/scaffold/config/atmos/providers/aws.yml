@@ -21,8 +21,13 @@ backend:
   encrypt: true
   dynamodb_table: "#{global_name_prefix}atmos-terraform-lock"
 secret:
-  type: s3
+  # s3 or ssm, or add your own fully qualified class name
+  type: ssm
+  # The bucket to use for s3 secret store, not used for ssm
   bucket: "#{global_name_prefix}secrets"
-  prefix:
+  # The prefix path to store keys under
+  prefix: "${local_name_prefix}"
+  # The region to host the secrets bucket in
   region: "#{_root_.region}"
+  # Store values encrypted (or not)
   encrypt: true
