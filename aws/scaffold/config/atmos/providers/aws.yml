@@ -26,7 +26,7 @@ secret:
   # The bucket to use for s3 secret store, not used for ssm
   bucket: "#{global_name_prefix}secrets"
   # The prefix path to store keys under
-  prefix: "${local_name_prefix}"
+  prefix: "#{local_name_prefix}"
   # The region to host the secrets bucket in
   region: "#{_root_.region}"
   # Store values encrypted (or not)

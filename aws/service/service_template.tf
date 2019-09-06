@@ -6,7 +6,7 @@ variable "service_<%= name %>_db_password" {
 
 module "service-<%= name %>-secret-access" {
   source = "../modules/secret-access"
-  secret_bucket = "${lookup(var.secret, "bucket")}"
+  secret_config = "${var.secret}"
   role = "${module.service-<%= name %>.task_role}"
   keys = ["service_<%= name %>_db_password"]
 }
@@ -144,13 +144,18 @@ module "service-<%= name %>" {
             { "name" : "DB_PORT", "value" : "${module.service-<%= name %>-rds.port}" },
             { "name" : "DB_NAME", "value" : "${module.service-<%= name %>-rds.database}" },
             { "name" : "DB_USER", "value" : "${module.service-<%= name %>-rds.username}" },
-            { "name" : "ATMOS_SECRET_BUCKET", "value" : "${lookup(var.secret, "bucket")}" },
-            { "name" : "ATMOS_SECRET_KEYS", "value" : "DB_PASS=service_<%= name %>_db_password" },
-
 <% end %>
             { "name" : "SVC_ENV", "value" : "${var.atmos_env}" },
             { "name" : "SVC_NAME", "value" : "$${name}" },
             { "name" : "SVC_PORT", "value" : "$${port}" }
+        ],
+        "secrets": [
+<% if use_rds %>
+          {
+            "name": "DB_PASS",
+            "valueFrom": "service_<%= name %>_db_password"
+          }
+<% end %>
         ],
         "logConfiguration": {
             "logDriver": "awslogs",
