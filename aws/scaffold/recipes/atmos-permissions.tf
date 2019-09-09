@@ -155,11 +155,16 @@ resource "aws_iam_access_key" "deployer" {
   user = "${aws_iam_user.deployer.name}"
 }
 
+variable "display_deployer" {
+  description = "Set to 1 to display the aws keys for the deployer user, e.g. TF_VAR_display_deployer=1 atmos -e ops plan"
+  default = 0
+}
+
 // Set enabled=1 to display deployer keys to get them for your CI system
 module "display-access-keys" {
   source = "../modules/atmos-ipc"
   action = "notify"
-  enabled = "${0 * (var.atmos_env == local.ops_env ? 1 : 0)}"
+  enabled = "${var.display_deployer * (var.atmos_env == local.ops_env ? 1 : 0)}"
   params = {
     message = <<-EOF
     deployer-access-key: ${join("", aws_iam_access_key.deployer.*.id)}
