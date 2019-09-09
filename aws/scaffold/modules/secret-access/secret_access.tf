@@ -3,6 +3,18 @@ variable "secret_config" {
   type = "map"
 }
 
+variable "local_name_prefix" {
+  description = <<-EOF
+    The local name prefix for disambiguating resource names that have a local scope
+    (e.g. when running multiple environments in the same account)
+  EOF
+  default = ""
+}
+
+variable "name" {
+  description = "The name indicating use of the secret access"
+}
+
 variable "role" {
   description = "The role to grant secret access to"
 }
@@ -67,7 +79,7 @@ data "template_file" "secret-access-policy" {
 }
 
 resource "aws_iam_role_policy" "secret-access" {
-  name = "secret-access"
+  name = "${var.local_name_prefix}secret-access-${var.name}"
   role = "${var.role}"
 
   policy = "${data.template_file.secret-access-policy.rendered}"

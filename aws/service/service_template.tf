@@ -7,6 +7,8 @@ variable "service_<%= name %>_db_password" {
 module "service-<%= name %>-secret-access" {
   source = "../modules/secret-access"
   secret_config = "${var.secret}"
+  local_name_prefix = "${var.local_name_prefix}"
+  name = "service-<%= name %>"
   role = "${module.service-<%= name %>.task_role}"
   keys = ["service_<%= name %>_db_password"]
 }
@@ -63,7 +65,7 @@ module "service-<%= name %>-alb" {
   target_type = "instance"
   destination_port = 32768
   destination_port_to = 61000
-  <%- else -#>
+  <%- else -%>
   destination_port = "${module.service-<%= name %>.port}"
   <%- end -%>
 
