@@ -139,3 +139,8 @@ variable "cloudwatch_alarm_target" {
   description = "The target of cloudwatch alarm_actions, usually an sns topic"
   default = ""
 }
+
+variable "publicly_accessible" {
+  description = "To make the rds instance have a public prescence"
+  default = false
+}

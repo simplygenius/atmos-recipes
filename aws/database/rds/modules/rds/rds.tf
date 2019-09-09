@@ -60,6 +60,7 @@ resource "aws_db_instance" "main" {
   password = "${var.db_password}"
   name = "${var.db_name}"
 
+  publicly_accessible = "${var.publicly_accessible}"
   db_subnet_group_name = "${aws_db_subnet_group.main.name}"
   parameter_group_name = "${
     var.parameter_group_name == "" ?
