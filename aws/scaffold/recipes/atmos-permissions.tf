@@ -166,6 +166,7 @@ module "display-access-keys" {
   action = "notify"
   enabled = "${var.display_deployer * (var.atmos_env == local.ops_env ? 1 : 0)}"
   params = {
+    inline = "true"
     message = <<-EOF
     deployer-access-key: ${join("", aws_iam_access_key.deployer.*.id)}
     deployer-access-secret: ${join("", aws_iam_access_key.deployer.*.secret)}
