@@ -33,7 +33,12 @@ locals {
   clean_path_prefix = "${join("/", compact(split("/", trimspace(local.raw_path_prefix))))}"
   path_prefix = "${length(local.clean_path_prefix) > 0 ? "/" : ""}${local.clean_path_prefix}"
   bucket = "${lookup(var.secret_config, "bucket", "")}"
+  account_id = "${data.aws_caller_identity.current.account_id}"
+  region = "${data.aws_region.current.name}"
 }
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
 
 data "template_file" "secret-access-policy-s3" {
   template = <<EOF
@@ -63,7 +68,7 @@ data "template_file" "secret-access-policy-ssm" {
         "ssm:DescribeParameters",
         "ssm:GetParameter*"
       ],
-      "Resource": ${jsonencode(formatlist("arn:aws:ssm:::parameter${local.path_prefix}/%s", var.keys))}
+      "Resource": ${jsonencode(formatlist("arn:aws:ssm:${local.region}:${local.account_id}:parameter${local.path_prefix}/%s", var.keys))}
     }
   ]
 }
