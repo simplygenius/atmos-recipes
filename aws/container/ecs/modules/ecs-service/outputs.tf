@@ -23,6 +23,11 @@ output "task_role" {
   value = "${aws_iam_role.ecs-task.name}"
 }
 
+output "execution_role" {
+  description = "The role used to grant the service execution framework IAM permissions"
+  value = "${aws_iam_role.ecs-execution.name}"
+}
+
 output "security_group_id" {
   description = "The security group used to grant the service network permissions"
    value = "${aws_security_group.default.id}"

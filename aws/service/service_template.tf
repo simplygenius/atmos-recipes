@@ -9,7 +9,10 @@ module "service-<%= name %>-secret-access" {
   secret_config = "${var.secret}"
   local_name_prefix = "${var.local_name_prefix}"
   name = "service-<%= name %>"
-  role = "${module.service-<%= name %>.task_role}"
+  // for ssm secrets (the framework does the lookup)
+  role = "${module.service-<%= name %>.execution_role}"
+  // for s3 secrets (your container does the lookup)
+  // role = "${module.service-<%= name %>.task_role}"
   keys = ["service_<%= name %>_db_password"]
 }
 
