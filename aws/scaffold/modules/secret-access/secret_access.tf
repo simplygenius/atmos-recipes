@@ -65,8 +65,8 @@ data "template_file" "secret-access-policy-ssm" {
     {
       "Effect": "Allow",
       "Action": [
-        "ssm:DescribeParameters",
-        "ssm:GetParameter*"
+        "ssm:GetParameter",
+        "ssm:GetParameters"
       ],
       "Resource": ${jsonencode(formatlist("arn:aws:ssm:${local.region}:${local.account_id}:parameter${local.path_prefix}/%s", var.keys))}
     }
