@@ -45,9 +45,9 @@ variable "create_repository" {
   default = 1
 }
 
-variable "image_expiry_days" {
-  description = "Clean up images older than this number of days"
-  default = 30
+variable "image_expiry_count" {
+  description = "Only keep the most recent images.  Set to -1 to never expire"
+  default = 100
 }
 
 variable "launch_type" {

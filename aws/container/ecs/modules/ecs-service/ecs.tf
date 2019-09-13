@@ -50,7 +50,7 @@ resource "aws_ecr_repository" "main" {
 }
 
 resource "aws_ecr_lifecycle_policy" "main" {
-  count = "${signum(var.create_repository)}"
+  count = "${signum(var.create_repository) == 1 && signum(var.image_expiry_count) == 1 ? 1 : 0}"
   repository = "${aws_ecr_repository.main.name}"
 
   policy = <<EOF
@@ -58,12 +58,11 @@ resource "aws_ecr_lifecycle_policy" "main" {
   "rules": [
       {
         "rulePriority": 1,
-        "description": "Expire images older than ${var.image_expiry_days} days",
+        "description": "Only keep the ${var.image_expiry_count} most recent images",
         "selection": {
-          "tagStatus": "untagged",
-          "countType": "sinceImagePushed",
-          "countUnit": "days",
-          "countNumber": ${var.image_expiry_days}
+          "tagStatus": "any",
+          "countType": "imageCountMoreThan",
+          "countNumber": ${var.image_expiry_count}
         },
         "action": {
           "type": "expire"
