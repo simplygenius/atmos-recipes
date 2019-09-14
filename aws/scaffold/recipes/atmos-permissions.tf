@@ -149,6 +149,39 @@ resource "aws_iam_user_policy" "deployer" {
   policy = "${data.template_file.policy-allow-assume-env-role-for-deployer.*.rendered[count.index]}"
 }
 
+// Allow the various env groups to assume the deployer role in their respective envs
+resource "aws_iam_group_policy" "env-deployer" {
+  count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
+
+  name = "allow-assume-role-to-${var.org_prefix}${var.all_env_names[count.index]}-deployer"
+  group = "${aws_iam_group.env-admin.*.id[count.index]}"
+  policy = "${data.template_file.policy-allow-assume-env-role-for-deployer.*.rendered[count.index]}"
+}
+
+// A convenience to allow members of the ops admin group to also assume the
+// deployer role for all other environments
+data "template_file" "policy-allow-assume-env-deployer-role-to-env-for-ops" {
+  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) * var.ops_admins_env : 0}"
+
+  vars {
+    account_id = "${lookup(var.account_ids, local.envs_without_ops[count.index])}"
+    // don't use auth_assume_role_name as it is based on current atmos_env
+    role_name = "${var.org_prefix}${local.envs_without_ops[count.index]}-deployer"
+  }
+
+  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
+}
+
+resource "aws_iam_group_policy" "ops-env-deployer" {
+  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) * var.ops_admins_env : 0}"
+
+  name = "allow-assume-role-to-${var.org_prefix}${local.envs_without_ops[count.index]}-deployer-for-ops"
+  group = "${var.org_prefix}ops-admin"
+  policy = "${data.template_file.policy-allow-assume-env-deployer-role-to-env-for-ops.*.rendered[count.index]}"
+
+  depends_on = ["aws_iam_group.env-admin"]
+}
+
 resource "aws_iam_access_key" "deployer" {
   count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
