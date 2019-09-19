@@ -2,80 +2,8 @@
 // don't end up with resource modifications innstead of creations when applying
 // to a new env (modifying a resource could break access whilst in the middle
 // of an apply)
-resource "aws_iam_group" "env-admin" {
-  count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
 
-  name = "${var.org_prefix}${var.all_env_names[count.index]}-admin"
-  path = "/"
-}
-
-data "template_file" "policy-allow-assume-env-role" {
-  count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
-
-  vars {
-    account_id = "${lookup(var.account_ids, var.all_env_names[count.index])}"
-    // don't use auth_assume_role_name as it is based on current atmos_env
-    role_name = "${var.org_prefix}${var.all_env_names[count.index]}-admin"
-  }
-
-  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
-}
-
-resource "aws_iam_group_policy" "env-admin" {
-  count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
-
-  name = "allow-assume-role-to-${var.org_prefix}${var.all_env_names[count.index]}"
-  group = "${aws_iam_group.env-admin.*.id[count.index]}"
-  policy = "${data.template_file.policy-allow-assume-env-role.*.rendered[count.index]}"
-}
-
-// ops members need to be allowed to assume role to the bootstrap role name
-// for each env account
-data "template_file" "policy-allow-assume-env-role-for-bootstrap" {
-  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) : 0}"
-
-  vars {
-    account_id = "${lookup(var.account_ids, local.envs_without_ops[count.index])}"
-    role_name = "${var.atmos_config["auth_bootstrap_assume_role_name"]}"
-  }
-
-  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
-}
-
-resource "aws_iam_group_policy" "ops-bootstrap-admin" {
-  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) : 0}"
-
-  name = "allow-bootstrap-assume-role-to-${var.org_prefix}${local.envs_without_ops[count.index]}"
-  group = "${var.org_prefix}ops-admin"
-  policy = "${data.template_file.policy-allow-assume-env-role-for-bootstrap.*.rendered[count.index]}"
-
-  depends_on = ["aws_iam_group.env-admin"]
-}
-
-// A convenience to allow members of the ops admin group to also admin all
-// other environments
-data "template_file" "policy-allow-assume-env-role-to-env-for-ops" {
-  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) * var.ops_admins_env : 0}"
-
-  vars {
-    account_id = "${lookup(var.account_ids, local.envs_without_ops[count.index])}"
-    // don't use auth_assume_role_name as it is based on current atmos_env
-    role_name = "${var.org_prefix}${local.envs_without_ops[count.index]}-admin"
-  }
-
-  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
-}
-
-resource "aws_iam_group_policy" "ops-env-admin" {
-  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) * var.ops_admins_env : 0}"
-
-  name = "allow-assume-role-to-${var.org_prefix}${local.envs_without_ops[count.index]}-for-ops"
-  group = "${var.org_prefix}ops-admin"
-  policy = "${data.template_file.policy-allow-assume-env-role-to-env-for-ops.*.rendered[count.index]}"
-
-  depends_on = ["aws_iam_group.env-admin"]
-}
-
+// The all-users group which controls basic controls for each human
 resource "aws_iam_group" "all-users" {
   count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
@@ -97,6 +25,7 @@ data "template_file" "policy-self-management" {
   template = "${file("../templates/policy-self-management.tmpl.json")}"
 }
 
+// Attach to the all-users group the policy for basic controls
 resource "aws_iam_group_policy" "self-management" {
   count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
@@ -106,21 +35,50 @@ resource "aws_iam_group_policy" "self-management" {
   policy = "${data.template_file.policy-self-management.rendered}"
 }
 
-data "template_file" "policy-assume-env-deployer-role" {
-  vars {
-    ops_account = "${local.ops_account}"
-    require_mfa = false
+// Create the cross acccount role structure for a deployer
+module "deployer" {
+  source = "../modules/cross-account-role"
+
+  name = "${var.org_prefix}deployer"
+  upstream_key = "ops"
+  downstream_keys = "${keys(var.account_ids)}"
+  current_key = "${var.atmos_env}"
+  account_map = "${var.account_ids}"
+  downstream_role_policies = {
+    "allows-ecs-deploy" = "${file("../templates/policy-deployer-permissions.json")}"
   }
-
-  template = "${file("../templates/policy-assume-env-role.tmpl.json")}"
+  // deploys usually happen from CI, so mfa is not practical
+  require_mfa = "false"
 }
 
-resource "aws_iam_role" "deployer" {
-  name               = "${var.org_prefix}${var.atmos_env}-deployer"
-  path               = "/"
-  assume_role_policy = "${data.template_file.policy-assume-env-deployer-role.rendered}"
+data "terraform_remote_state" "bootstrap" {
+  backend = "s3"
+  config {
+    bucket = "${lookup(var.backend, "bucket")}"
+    key = "bootstrap-terraform.tfstate"
+    region = "${lookup(var.backend, "region")}"
+  }
 }
 
+// Attach policy to each admin group as a convenience to allow each to the deployer role for that env
+resource "aws_iam_group_policy" "admin-group-gets-each-env-deployer" {
+  count = "${module.deployer.in_upstream_only_count * length(var.all_env_names)}"
+
+  name = "allow-assume-role-to-${module.deployer.upstream_group_names[var.all_env_names[count.index]]}"
+  group = "${data.terraform_remote_state.bootstrap.admin_groups[var.all_env_names[count.index]]}"
+  policy = "${module.deployer.upstream_group_policies[var.all_env_names[count.index]]}"
+}
+
+// Attach policies to the super admin group as a convenience to allow ops to assume role to each env deployer
+resource "aws_iam_group_policy" "superadmin-group-gets-all-env-deployer" {
+  count = "${module.deployer.in_upstream_only_count * length(var.all_env_names)}"
+
+  name = "allow-assume-role-to-${module.deployer.upstream_group_names[var.all_env_names[count.index]]}"
+  group = "${data.terraform_remote_state.bootstrap.superadmin_group}"
+  policy = "${module.deployer.upstream_group_policies[var.all_env_names[count.index]]}"
+}
+
+// The deployer user with deploy only access in each env - allows us to create access keys for use in CI
 resource "aws_iam_user" "deployer" {
   count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
@@ -128,58 +86,13 @@ resource "aws_iam_user" "deployer" {
   path = "/"
 }
 
-data "template_file" "policy-allow-assume-env-role-for-deployer" {
-  count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
+// Add the deployer user to the aggregate deploy group to give them access to deploy in all envs
+resource "aws_iam_group_membership" "deployer-user-in-all-deployer-groups" {
+  count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
-  vars {
-    account_id = "${lookup(var.account_ids, var.all_env_names[count.index])}"
-    // don't use auth_assume_role_name as it is based on current atmos_env
-    role_name = "${var.org_prefix}${var.all_env_names[count.index]}-deployer"
-  }
-
-  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
-}
-
-resource "aws_iam_user_policy" "deployer" {
-  count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
-
-  name = "allow-assume-role-to-${var.org_prefix}${var.all_env_names[count.index]}-deployer"
-  user = "${aws_iam_user.deployer.name}"
-
-  policy = "${data.template_file.policy-allow-assume-env-role-for-deployer.*.rendered[count.index]}"
-}
-
-// Allow the various env groups to assume the deployer role in their respective envs
-resource "aws_iam_group_policy" "env-deployer" {
-  count = "${var.atmos_env == local.ops_env ? length(var.all_env_names) : 0}"
-
-  name = "allow-assume-role-to-${var.org_prefix}${var.all_env_names[count.index]}-deployer"
-  group = "${aws_iam_group.env-admin.*.id[count.index]}"
-  policy = "${data.template_file.policy-allow-assume-env-role-for-deployer.*.rendered[count.index]}"
-}
-
-// A convenience to allow members of the ops admin group to also assume the
-// deployer role for all other environments
-data "template_file" "policy-allow-assume-env-deployer-role-to-env-for-ops" {
-  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) * var.ops_admins_env : 0}"
-
-  vars {
-    account_id = "${lookup(var.account_ids, local.envs_without_ops[count.index])}"
-    // don't use auth_assume_role_name as it is based on current atmos_env
-    role_name = "${var.org_prefix}${local.envs_without_ops[count.index]}-deployer"
-  }
-
-  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
-}
-
-resource "aws_iam_group_policy" "ops-env-deployer" {
-  count = "${var.atmos_env == local.ops_env ? length(local.envs_without_ops) * var.ops_admins_env : 0}"
-
-  name = "allow-assume-role-to-${var.org_prefix}${local.envs_without_ops[count.index]}-deployer-for-ops"
-  group = "${var.org_prefix}ops-admin"
-  policy = "${data.template_file.policy-allow-assume-env-deployer-role-to-env-for-ops.*.rendered[count.index]}"
-
-  depends_on = ["aws_iam_group.env-admin"]
+  name = "belong-to-${module.deployer.upstream_aggregate_group_name}}"
+  group = "${module.deployer.upstream_aggregate_group_name}"
+  users = ["${aws_iam_user.deployer.name}"]
 }
 
 resource "aws_iam_access_key" "deployer" {
@@ -198,6 +111,7 @@ module "display-access-keys" {
   source = "../modules/atmos-ipc"
   action = "notify"
   enabled = "${var.display_deployer * (var.atmos_env == local.ops_env ? 1 : 0)}"
+
   params = {
     inline = "true"
     message = <<-EOF
@@ -207,18 +121,11 @@ module "display-access-keys" {
   }
 }
 
-resource "aws_iam_role_policy" "deployer" {
-  name = "${var.org_prefix}${var.atmos_env}-deployer"
-  role = "${aws_iam_role.deployer.name}"
-
-  policy = "${file("../templates/policy-deployer-permissions.json")}"
-}
-
 resource "aws_iam_group_policy" "allow-billing-access" {
   count = "${var.atmos_env == local.ops_env ? 1 : 0}"
 
   name = "${var.org_prefix}allow-billing-access"
-  group = "${var.org_prefix}ops-admin"
+  group = "${data.terraform_remote_state.bootstrap.superadmin_group}"
 
   policy = "${file("../templates/policy-allow-all-billing.json")}"
 }

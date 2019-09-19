@@ -88,12 +88,11 @@ variable "force_destroy_buckets" {
   default = false
 }
 
-variable "ops_admins_env" {
+variable "require_mfa" {
   description = <<-EOF
-    Members of the ops admin group will also have admin access to all other
-    environments
+    Require MFA wherever it makes sense, e.g. assuming an AWS IAM role
   EOF
-  default = 1
+  default = true
 }
 
 variable "ops_alerts_topic" {
@@ -109,6 +108,6 @@ locals {
 }
 
 provider "aws" {
-  version = "~> 1.0"
+  version = "~> 2.0"
   region = "${var.region}"
 }

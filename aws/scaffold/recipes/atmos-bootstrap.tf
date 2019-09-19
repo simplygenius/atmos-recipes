@@ -73,25 +73,49 @@ resource "aws_dynamodb_table" "backend-lock-table" {
   }
 }
 
-data "template_file" "policy-assume-env-role" {
+// Create the cross acccount role structure for admin
+module "admin" {
+  source = "../modules/cross-account-role"
+
+  name = "${var.org_prefix}admin"
+  upstream_key = "ops"
+  downstream_keys = "${keys(var.account_ids)}"
+  current_key = "${var.atmos_env}"
+  account_map = "${var.account_ids}"
+  downstream_role_policies = {
+    "allows-all" = "${file("../templates/policy-allow-all.json")}"
+  }
+  require_mfa = "${var.require_mfa}"
+  max_session_duration = 10800
+}
+
+// For use in remote state for atmos-permissions.tf in default working group
+output "admin_groups" {
+  value = "${module.admin.upstream_group_names}"
+}
+
+output "superadmin_group" {
+  value = "${module.admin.upstream_aggregate_group_name}"
+}
+
+// Members of the super admin group need to be allowed to assume role to the bootstrap role name
+// for each env account
+data "template_file" "policy-allow-assume-env-role-for-bootstrap" {
+  count = "${module.admin.in_upstream_only_count * length(var.all_env_names)}"
+
   vars {
-    ops_account = "${local.ops_account}"
-    require_mfa = true
+    account_id = "${lookup(var.account_ids, var.all_env_names[count.index])}"
+    role_name = "${var.atmos_config["auth_bootstrap_assume_role_name"]}"
   }
 
-  template = "${file("../templates/policy-assume-env-role.tmpl.json")}"
+  template = "${file("../templates/policy-allow-assume-env-role.tmpl.json")}"
 }
 
-resource "aws_iam_role" "env-admin" {
-  name  = "${var.org_prefix}${var.atmos_env}-admin"
-  path  = "/"
+// Attach to the super admin group the policy for assuming each env bootstrap role
+resource "aws_iam_group_policy" "ops-bootstrap-admin" {
+  count = "${module.admin.in_upstream_only_count * length(var.all_env_names)}"
 
-  assume_role_policy = "${data.template_file.policy-assume-env-role.rendered}"
-}
-
-resource "aws_iam_role_policy" "env-admin" {
-  name = "${var.org_prefix}${var.atmos_env}-admin"
-  role = "${aws_iam_role.env-admin.name}"
-
-  policy = "${file("../templates/policy-allow-all.json")}"
+  name = "allow-bootstrap-assume-role-to-${module.admin.upstream_group_names[var.all_env_names[count.index]]}"
+  group = "${module.admin.upstream_aggregate_group_name}"
+  policy = "${data.template_file.policy-allow-assume-env-role-for-bootstrap.*.rendered[count.index]}"
 }
