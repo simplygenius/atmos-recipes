@@ -27,8 +27,8 @@ data "template_file" "policy-deploy-static-website" {
   template = "${file("../templates/policy-deploy-static-website.tmpl.json")}"
 }
 
-resource "aws_iam_role_policy" "website-deploy-s3-access" {
-  name = "${var.local_name_prefix}website-deploy-s3-access"
+resource "aws_iam_role_policy" "website-deploy-s3-cdn-access" {
+  name = "${var.local_name_prefix}website-deploy-s3-cdn-access"
   role = "${aws_iam_role.deployer.name}"
 
   policy = "${data.template_file.policy-deploy-static-website.rendered}"

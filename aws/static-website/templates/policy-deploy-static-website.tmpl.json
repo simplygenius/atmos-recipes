@@ -12,6 +12,15 @@
         "${site_bucket_arn}",
         "${site_bucket_arn}/*"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateInvalidation"
+      ],
+      "Resource": [
+        "${site_cdn_arn}"
+      ]
     }
   ]
 }
