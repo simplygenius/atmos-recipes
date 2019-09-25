@@ -1,24 +1,23 @@
 locals {
-  upstream_account = "${lookup(var.account_ids, var.upstream_env)}"
+  upstream_account   = var.account_ids[var.upstream_env]
   upstream_role_name = "${var.local_name_prefix}${var.name}"
 
-  in_upstream_env = "${var.upstream_env == var.atmos_env ? 1 : 0}"
-  in_downstream_env = "${var.upstream_env != var.atmos_env ? 1 : 0}"
+  in_upstream_env   = var.upstream_env == var.atmos_env ? 1 : 0
+  in_downstream_env = var.upstream_env != var.atmos_env ? 1 : 0
 }
 
 data "null_data_source" "downstream" {
-  count = "${length(var.downstream_envs)}"
+  count = length(var.downstream_envs)
 
   inputs = {
-    account_ids = "${lookup(var.account_ids, element(var.downstream_envs, count.index))}"
+    account_ids = var.account_ids[element(var.downstream_envs, count.index)]
   }
 }
 
-
 resource "aws_iam_role" "upstream" {
-  count = "${local.in_upstream_env}"
+  count = local.in_upstream_env
 
-  name = "${local.upstream_role_name}"
+  name = local.upstream_role_name
   path = "/"
   assume_role_policy = <<POLICY
 {
@@ -28,7 +27,13 @@ resource "aws_iam_role" "upstream" {
       "Effect": "Allow",
       "Principal": {
         "AWS": [
-          ${join(",", formatlist("\"arn:aws:iam::%s:root\"", data.null_data_source.downstream.*.outputs.account_ids))}
+          ${join(
+  ",",
+  formatlist(
+    "\"arn:aws:iam::%s:root\"",
+    data.null_data_source.downstream.*.outputs.account_ids,
+  ),
+)}
         ]
       },
       "Action": "sts:AssumeRole"
@@ -36,22 +41,23 @@ resource "aws_iam_role" "upstream" {
   ]
 }
 POLICY
+
 }
 
 data "template_file" "upstream-policy" {
-  template = "${var.policy}"
-  vars {
-    upstream_account = "${local.upstream_account}"
+  template = var.policy
+  vars = {
+    upstream_account = local.upstream_account
   }
 }
 
 resource "aws_iam_role_policy" "upstream" {
-  count = "${local.in_upstream_env}"
+  count = local.in_upstream_env
 
-  name = "${local.upstream_role_name}"
-  role = "${aws_iam_role.upstream.name}"
+  name = local.upstream_role_name
+  role = aws_iam_role.upstream[0].name
 
-  policy = "${data.template_file.upstream-policy.rendered}"
+  policy = data.template_file.upstream-policy.rendered
 }
 
 data "template_file" "downstream-policy" {
@@ -65,4 +71,6 @@ data "template_file" "downstream-policy" {
   }
 }
 POLICY
+
 }
+

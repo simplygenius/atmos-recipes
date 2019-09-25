@@ -1,10 +1,10 @@
 resource "aws_security_group" "default" {
-  name = "${var.local_name_prefix}ecs-${var.name}"
-  vpc_id = "${var.vpc_id}"
+  name   = "${var.local_name_prefix}ecs-${var.name}"
+  vpc_id = var.vpc_id
 }
 
 resource "aws_iam_role" "ecs-task" {
-  name = "${var.local_name_prefix}ecs-task-${var.name}"
+  name               = "${var.local_name_prefix}ecs-task-${var.name}"
   assume_role_policy = <<POLICY
 {
 "Version": "2008-10-17",
@@ -19,10 +19,11 @@ resource "aws_iam_role" "ecs-task" {
 ]
 }
 POLICY
+
 }
 
 resource "aws_iam_role" "ecs-execution" {
-  name = "${var.local_name_prefix}ecs-execution-${var.name}"
+  name               = "${var.local_name_prefix}ecs-execution-${var.name}"
   assume_role_policy = <<POLICY
 {
 "Version": "2008-10-17",
@@ -37,21 +38,22 @@ resource "aws_iam_role" "ecs-execution" {
 ]
 }
 POLICY
+
 }
 
 resource "aws_iam_role_policy_attachment" "ecs-execution" {
-  role = "${aws_iam_role.ecs-execution.name}"
+  role       = aws_iam_role.ecs-execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 resource "aws_ecr_repository" "main" {
-  count = "${signum(var.create_repository)}"
-  name = "${var.local_name_prefix}${var.name}"
+  count = signum(var.create_repository)
+  name  = "${var.local_name_prefix}${var.name}"
 }
 
 resource "aws_ecr_lifecycle_policy" "main" {
-  count = "${signum(var.create_repository) == 1 && signum(var.image_expiry_count) == 1 ? 1 : 0}"
-  repository = "${aws_ecr_repository.main.name}"
+  count      = signum(var.create_repository) == 1 && signum(var.image_expiry_count) == 1 ? 1 : 0
+  repository = aws_ecr_repository.main[0].name
 
   policy = <<EOF
 {
@@ -71,136 +73,167 @@ resource "aws_ecr_lifecycle_policy" "main" {
   ]
 }
 EOF
+
 }
 
 resource "aws_cloudwatch_log_group" "main" {
-  name = "${var.local_name_prefix}${var.name}"
+  name              = "${var.local_name_prefix}${var.name}"
   retention_in_days = 30
 }
 
 data "template_file" "containers_template" {
-  template = "${var.containers_template}"
+  template = var.containers_template
 
-  vars {
-    atmos_env = "${var.atmos_env}"
-    name = "${var.local_name_prefix}${var.name}"
-    cluster_name = "${element(split("/", var.ecs_cluster_arn), 1)}"
-    registry_host = "${join("", aws_ecr_repository.main.*.registry_id)}.dkr.ecr.${var.region}.amazonaws.com"
-    repository_name = "${join("", aws_ecr_repository.main.*.name)}"
-    log_group_name = "${aws_cloudwatch_log_group.main.name}"
-    port = "${var.port}"
-    cpu = "${var.cpu}"
-    memory = "${var.memory}"
+  vars = {
+    atmos_env       = var.atmos_env
+    name            = "${var.local_name_prefix}${var.name}"
+    cluster_name    = element(split("/", var.ecs_cluster_arn), 1)
+    registry_host   = "${join("", aws_ecr_repository.main.*.registry_id)}.dkr.ecr.${var.region}.amazonaws.com"
+    repository_name = join("", aws_ecr_repository.main.*.name)
+    log_group_name  = aws_cloudwatch_log_group.main.name
+    port            = var.port
+    cpu             = var.cpu
+    memory          = var.memory
   }
 }
 
 resource "aws_ecs_task_definition" "main" {
-  family = "${var.local_name_prefix}${var.name}"
-  container_definitions = "${data.template_file.containers_template.rendered}"
-  volume = "${var.volumes}"
+  family                = "${var.local_name_prefix}${var.name}"
+  container_definitions = data.template_file.containers_template.rendered
+  dynamic "volume" {
+    for_each = var.volumes
+    content {
+      name      = volume.value.name
+      host_path = lookup(volume.value, "host_path", null)
 
-  task_role_arn = "${aws_iam_role.ecs-task.arn}"
-  execution_role_arn = "${aws_iam_role.ecs-execution.arn}"
+      dynamic "docker_volume_configuration" {
+        for_each = lookup(volume.value, "docker_volume_configuration", [])
+        content {
+          autoprovision = lookup(docker_volume_configuration.value, "autoprovision", null)
+          driver        = lookup(docker_volume_configuration.value, "driver", null)
+          driver_opts   = lookup(docker_volume_configuration.value, "driver_opts", null)
+          labels        = lookup(docker_volume_configuration.value, "labels", null)
+          scope         = lookup(docker_volume_configuration.value, "scope", null)
+        }
+      }
+    }
+  }
 
-  cpu = "${var.cpu}"
-  memory = "${var.memory}"
+  task_role_arn      = aws_iam_role.ecs-task.arn
+  execution_role_arn = aws_iam_role.ecs-execution.arn
 
-  network_mode = "${var.network_mode}"
-  requires_compatibilities = ["${var.launch_type}"]
+  cpu    = var.cpu
+  memory = var.memory
+
+  network_mode             = var.network_mode
+  requires_compatibilities = [var.launch_type]
 }
 
 data "aws_ecs_task_definition" "main" {
-  depends_on = [ "aws_ecs_task_definition.main" ]
-  task_definition = "${aws_ecs_task_definition.main.family}"
+  depends_on      = [aws_ecs_task_definition.main]
+  task_definition = aws_ecs_task_definition.main.family
 }
 
 locals {
-  lb = "${signum(var.integrate_with_lb) == 1}"
-  nc = "${var.network_mode == "awsvpc"}"
+  lb = signum(var.integrate_with_lb) == 1
+  nc = var.network_mode == "awsvpc"
 }
 
 resource "aws_ecs_service" "neither_lb_nor_nc" {
-  count = "${!local.lb && !local.nc ? 1 : 0}"
+  count = false == local.lb && false == local.nc ? 1 : 0
 
   name = "${var.local_name_prefix}${var.name}"
 
-  launch_type = "${var.launch_type}"
-  cluster = "${var.ecs_cluster_arn}"
+  launch_type = var.launch_type
+  cluster     = var.ecs_cluster_arn
 
-  desired_count = "${var.container_count}"
-  deployment_minimum_healthy_percent = "${var.deployment_minimum_healthy_percent}"
-  deployment_maximum_percent = "${var.deployment_maximum_percent}"
+  desired_count                      = var.container_count
+  deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
+  deployment_maximum_percent         = var.deployment_maximum_percent
 
   # Track the latest ACTIVE revision
-  task_definition = "${aws_ecs_task_definition.main.family}:${max("${aws_ecs_task_definition.main.revision}", "${data.aws_ecs_task_definition.main.revision}")}"
+  task_definition = "${aws_ecs_task_definition.main.family}:${max(
+    aws_ecs_task_definition.main.revision,
+    data.aws_ecs_task_definition.main.revision,
+  )}"
 }
 
 resource "aws_ecs_service" "lb_only" {
-  count = "${local.lb && !local.nc ? 1 : 0}"
+  count = local.lb && false == local.nc ? 1 : 0
 
   name = "${var.local_name_prefix}${var.name}"
 
-  launch_type = "${var.launch_type}"
-  cluster = "${var.ecs_cluster_arn}"
+  launch_type = var.launch_type
+  cluster     = var.ecs_cluster_arn
 
-  desired_count = "${var.container_count}"
-  deployment_minimum_healthy_percent = "${var.deployment_minimum_healthy_percent}"
-  deployment_maximum_percent = "${var.deployment_maximum_percent}"
+  desired_count                      = var.container_count
+  deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
+  deployment_maximum_percent         = var.deployment_maximum_percent
 
   # Track the latest ACTIVE revision
-  task_definition = "${aws_ecs_task_definition.main.family}:${max("${aws_ecs_task_definition.main.revision}", "${data.aws_ecs_task_definition.main.revision}")}"
+  task_definition = "${aws_ecs_task_definition.main.family}:${max(
+    aws_ecs_task_definition.main.revision,
+    data.aws_ecs_task_definition.main.revision,
+  )}"
 
   load_balancer {
-    target_group_arn = "${var.alb_target_group_id}"
-    container_name = "${var.local_name_prefix}${var.name}"
-    container_port = "${var.port}"
+    target_group_arn = var.alb_target_group_id
+    container_name   = "${var.local_name_prefix}${var.name}"
+    container_port   = var.port
   }
 }
 
 resource "aws_ecs_service" "nc_only" {
-  count = "${!local.lb && local.nc ? 1 : 0}"
+  count = false == local.lb && local.nc ? 1 : 0
 
   name = "${var.local_name_prefix}${var.name}"
 
-  launch_type = "${var.launch_type}"
-  cluster = "${var.ecs_cluster_arn}"
+  launch_type = var.launch_type
+  cluster     = var.ecs_cluster_arn
 
-  desired_count = "${var.container_count}"
-  deployment_minimum_healthy_percent = "${var.deployment_minimum_healthy_percent}"
-  deployment_maximum_percent = "${var.deployment_maximum_percent}"
+  desired_count                      = var.container_count
+  deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
+  deployment_maximum_percent         = var.deployment_maximum_percent
 
   # Track the latest ACTIVE revision
-  task_definition = "${aws_ecs_task_definition.main.family}:${max("${aws_ecs_task_definition.main.revision}", "${data.aws_ecs_task_definition.main.revision}")}"
+  task_definition = "${aws_ecs_task_definition.main.family}:${max(
+    aws_ecs_task_definition.main.revision,
+    data.aws_ecs_task_definition.main.revision,
+  )}"
 
   network_configuration {
-    security_groups = ["${aws_security_group.default.id}", "${var.security_groups}"]
-    subnets         = ["${var.subnet_ids}"]
+    security_groups = flatten([aws_security_group.default.id, var.security_groups])
+    subnets         = var.subnet_ids
   }
 }
 
 resource "aws_ecs_service" "lb_and_nc" {
-  count = "${local.lb && local.nc ? 1 : 0}"
+  count = local.lb && local.nc ? 1 : 0
 
   name = "${var.local_name_prefix}${var.name}"
 
-  launch_type = "${var.launch_type}"
-  cluster = "${var.ecs_cluster_arn}"
+  launch_type = var.launch_type
+  cluster     = var.ecs_cluster_arn
 
-  desired_count = "${var.container_count}"
-  deployment_minimum_healthy_percent = "${var.deployment_minimum_healthy_percent}"
-  deployment_maximum_percent = "${var.deployment_maximum_percent}"
+  desired_count                      = var.container_count
+  deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
+  deployment_maximum_percent         = var.deployment_maximum_percent
 
   # Track the latest ACTIVE revision
-  task_definition = "${aws_ecs_task_definition.main.family}:${max("${aws_ecs_task_definition.main.revision}", "${data.aws_ecs_task_definition.main.revision}")}"
+  task_definition = "${aws_ecs_task_definition.main.family}:${max(
+    aws_ecs_task_definition.main.revision,
+    data.aws_ecs_task_definition.main.revision,
+  )}"
 
   load_balancer {
-    target_group_arn = "${var.alb_target_group_id}"
-    container_name = "${var.local_name_prefix}${var.name}"
-    container_port = "${var.port}"
+    target_group_arn = var.alb_target_group_id
+    container_name   = "${var.local_name_prefix}${var.name}"
+    container_port   = var.port
   }
 
   network_configuration {
-    security_groups = ["${aws_security_group.default.id}", "${var.security_groups}"]
-    subnets         = ["${var.subnet_ids}"]
+    security_groups = flatten([aws_security_group.default.id, var.security_groups])
+    subnets         = var.subnet_ids
   }
 }
+

@@ -1,13 +1,14 @@
 data "template_file" "cloudinit-file-entry" {
-  count = "${var.file_count}"
-  // NOTE: Ensures generated yml is indented correctly by replacing newine with newline+spaces
-  template = "${file("${path.module}/file_entry.tmpl.yml")}"
+  count = var.file_count
 
-  vars {
-    path = "${lookup(var.files[count.index], "path")}"
-    content = "${lookup(var.files[count.index], "content")}"
-    owner = "${lookup(var.files[count.index], "owner", "root:root")}"
-    permissions = "${lookup(var.files[count.index], "permissions", "0644")}"
+  // NOTE: Ensures generated yml is indented correctly by replacing newine with newline+spaces
+  template = file("${path.module}/file_entry.tmpl.yml")
+
+  vars = {
+    path        = var.files[count.index]["path"]
+    content     = var.files[count.index]["content"]
+    owner       = lookup(var.files[count.index], "owner", "root:root")
+    permissions = lookup(var.files[count.index], "permissions", "0644")
   }
 }
 
@@ -19,8 +20,11 @@ write_files:
 $${replace(files, "*&^%", "\n")}
 
 EOF
-  vars {
+
+
+  vars = {
     // Use an unlikely delimiter to work around lack of lists in template vars
-    files = "${join("*&^%", data.template_file.cloudinit-file-entry.*.rendered)}"
+    files = join("*&^%", data.template_file.cloudinit-file-entry.*.rendered)
   }
 }
+

@@ -6,7 +6,9 @@ variable "global_name_prefix" {
   description = <<-EOF
     The global name prefix for disambiguating resource names that have a global
     scope (e.g. s3 bucket names)
-  EOF
+EOF
+
+
   default = ""
 }
 
@@ -14,7 +16,9 @@ variable "local_name_prefix" {
   description = <<-EOF
     The local name prefix for disambiguating resource names that have a local scope
     (e.g. when running multiple environments in the same account)
-  EOF
+EOF
+
+
   default = ""
 }
 
@@ -24,17 +28,17 @@ variable "az_count" {
 
 variable "enable_nat" {
   description = "Enable provisioning of NAT gateways for each subnet in the vpc"
-  default = 1
+  default     = 1
 }
 
 variable "enable_redundant_nat" {
   description = "Enable redundant provisioning of NAT gateways, one per AZ vs one for entire vpc"
-  default = 1
+  default     = 1
 }
 
 variable "vpc_tenancy" {
   description = "Instance tenancy for the VPC"
-  default = "default"
+  default     = "default"
 }
 
 variable "permissive_default_security_group" {
@@ -51,13 +55,15 @@ variable "permissive_default_security_group" {
     case by case basis (e.g. instance -> rds).  However, it does come in handy
     for debugging.  Set to "none" to setup an empty default security group, and
     anything else to leave it untouched.
-  EOF
+EOF
+
+
   default = "egress"
 }
 
 variable "vpc_cidr" {
   description = "CIDR for VPC"
-  default = "10.10.0.0/16"
+  default     = "10.10.0.0/16"
 }
 
 variable "vpc_cidr_subnet_bits" {
@@ -67,7 +73,9 @@ variable "vpc_cidr_subnet_bits" {
     exist ing VPC as the cidrs for all subnets will also change.  Since 3 bits
     gives 8 subnets, which is more than the number of AZs in a typical AWS
     account, you should never need to change it
-  EOF
+EOF
+
+
   default = 3
 }
 
@@ -105,28 +113,44 @@ variable "vpc_cidr_subnet_bits" {
 //
 data "template_file" "private_subnet_cidrs" {
   // Limit the max AZ subnets by the number of bits
-  count = "${(var.az_count % floor(pow(2, var.vpc_cidr_subnet_bits)))}"
+  count = var.az_count % floor(pow(2, var.vpc_cidr_subnet_bits))
+
   // Each AZ subnet is divided into two (1 bit), with the even/first subnet
   // being the private one, and the odd/second subnet for public+spare (below)
-  template = "${cidrsubnet(cidrsubnet(var.vpc_cidr, var.vpc_cidr_subnet_bits, count.index), 1, 0)}"
+  template = cidrsubnet(
+    cidrsubnet(var.vpc_cidr, var.vpc_cidr_subnet_bits, count.index),
+    1,
+    0,
+  )
 }
 
 data "template_file" "public_subnet_cidrs" {
-  count = "${(var.az_count % floor(pow(2, var.vpc_cidr_subnet_bits)))}"
+  count = var.az_count % floor(pow(2, var.vpc_cidr_subnet_bits))
+
   // Each AZ subnet is divided into two (1 bit), with the odd/second subnet
   // being for public use, further subdivided into 2 for the public subnet and
   // a spare one
-  template = "${cidrsubnet(cidrsubnet(cidrsubnet(var.vpc_cidr, var.vpc_cidr_subnet_bits, count.index), 1, 1), 1, 0)}"
+  template = cidrsubnet(
+    cidrsubnet(
+      cidrsubnet(var.vpc_cidr, var.vpc_cidr_subnet_bits, count.index),
+      1,
+      1,
+    ),
+    1,
+    0,
+  )
 }
 
 locals {
-  private_subnet_cidrs = "${data.template_file.private_subnet_cidrs.*.rendered}"
-  public_subnet_cidrs = "${data.template_file.public_subnet_cidrs.*.rendered}"
+  private_subnet_cidrs = data.template_file.private_subnet_cidrs.*.rendered
+  public_subnet_cidrs  = data.template_file.public_subnet_cidrs.*.rendered
 
-  nat_enablement = "${signum(var.enable_nat) == 1 ? 1 : 0}"
-  nat_redundancy = "${signum(var.enable_redundant_nat) == 1 ? 1 : 0}"
+  nat_enablement = signum(var.enable_nat) == 1 ? 1 : 0
+  nat_redundancy = signum(var.enable_redundant_nat) == 1 ? 1 : 0
+
   // When doing redundant NATs, add a NAT to each public subnet.  Since the
   // pubic subnets are setup to be 1:1 with the AZs, we use the public subnet
   // count for the NAT count
-  nat_count = "${(local.nat_redundancy == 0 ? 1 : length(local.public_subnet_cidrs)) * local.nat_enablement}"
+  nat_count = (local.nat_redundancy == 0 ? 1 : length(local.public_subnet_cidrs)) * local.nat_enablement
 }
+

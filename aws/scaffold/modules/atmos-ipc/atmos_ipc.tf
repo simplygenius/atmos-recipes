@@ -4,30 +4,34 @@ variable "action" {
 
 variable "params" {
   description = "The map of parameters to send to atmos IPC"
-  type = "map"
+  type        = map(string)
 }
 
 variable "enabled" {
   description = "Allows disabling the notification programatically"
-  default = 1
+  default     = 1
 }
 
 locals {
-  query = "${merge(var.params, map(
-    "action", "${var.action}",
-    "enabled", "${var.enabled}"
-  ))}"
+  query = merge(
+    var.params,
+    {
+      "action"  = var.action
+      "enabled" = var.enabled
+    },
+  )
 }
 
 data "external" "notify" {
-  count = "${signum(var.enabled)}"
+  count = signum(var.enabled)
 
   program = ["sh", "-c", "$ATMOS_IPC_CLIENT"]
 
-  query = "${local.query}"
+  query = local.query
 }
 
 output "force_dependency" {
   description = "Allows one to force a dependency on this module completing, e.g. when modal=true"
-  value = "${jsonencode(data.external.notify.*.result) == "" ? "" : ""}"
+  value       = jsonencode(data.external.notify.*.result) == "" ? "" : ""
 }
+

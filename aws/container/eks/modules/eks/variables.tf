@@ -6,7 +6,9 @@ variable "global_name_prefix" {
   description = <<-EOF
     The global name prefix for disambiguating resource names that have a global
     scope (e.g. s3 bucket names)
-  EOF
+EOF
+
+
   default = ""
 }
 
@@ -14,7 +16,9 @@ variable "local_name_prefix" {
   description = <<-EOF
     The local name prefix for disambiguating resource names that have a local scope
     (e.g. when running multiple environments in the same account)
-  EOF
+EOF
+
+
   default = ""
 }
 
@@ -32,7 +36,7 @@ variable "vpc_id" {
 
 variable "subnet_ids" {
   description = "Subnets for instances"
-  type = "list"
+  type        = list(string)
 }
 
 variable "node_role" {
@@ -41,6 +45,7 @@ variable "node_role" {
 
 variable "cluster_security_groups" {
   description = "The security groups to associate the cluster with"
-  type = "list"
-  default = []
+  type        = list(string)
+  default     = []
 }
+

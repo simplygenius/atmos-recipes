@@ -6,7 +6,9 @@ variable "global_name_prefix" {
   description = <<-EOF
     The global name prefix for disambiguating resource names that have a global
     scope (e.g. s3 bucket names)
-  EOF
+EOF
+
+
   default = ""
 }
 
@@ -14,7 +16,9 @@ variable "local_name_prefix" {
   description = <<-EOF
     The local name prefix for disambiguating resource names that have a local scope
     (e.g. when running multiple environments in the same account)
-  EOF
+EOF
+
+
   default = ""
 }
 
@@ -24,60 +28,60 @@ variable "name" {
 
 variable "account_ids" {
   description = "AWS account ids"
-  type = "map"
+  type        = map(string)
 }
 
 variable "ops_env" {
   description = "The name of the ops environment"
-  default = "ops"
+  default     = "ops"
 }
 
 variable "user_data" {
   description = "Additional user data script run at the end of the user data process, can also use cloudinit_files for more control"
-  default = ""
+  default     = ""
 }
 
 variable "cloudinit_files" {
   description = "Additional user data files in the form needed by the cloudinit-files module (list of maps of path/content/owner/permissions)"
-  type = "list"
-  default = []
+  type        = list(string)
+  default     = []
 }
 
 variable "cloudinit_config" {
   description = "Additional cloudinit config"
-  default = ""
+  default     = ""
 }
 
 variable "instance_role" {
   description = "The instance role for adding policies required by the scripts being run as user data"
-  default = ""
+  default     = ""
 }
 
 variable "policies" {
   description = "A list of policies to add to the instance role (list of maps with name, policy keys)"
-  type = "list"
-  default = []
+  type        = list(string)
+  default     = []
 }
 
 variable "environment" {
   description = "Additional environment variables to set in the remote environment"
-  type = "map"
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "upgrade_packages" {
   description = "Set the flag to cloudinit to enable package upgrades on first boot"
-  default = 1
+  default     = 1
 }
 
 variable "debug_user_data" {
   description = "Enables more verbose logging of user data scripts"
-  default = 0
+  default     = 0
 }
 
 variable "cloudwatch_alarm_target" {
   description = "The target of cloudwatch alarm_actions, usually an sns topic"
-  default = ""
+  default     = ""
 }
 
 variable "iam_inspect_role" {
@@ -86,7 +90,7 @@ variable "iam_inspect_role" {
 
 variable "iam_permission_groups" {
   description = "The groups that grant the given permissions"
-  type = "map"
+  type        = map(string)
 }
 
 variable "zone_id" {
@@ -95,7 +99,7 @@ variable "zone_id" {
 
 variable "use_public_ip" {
   description = "Use the public ip when registering instances with the route53 zone"
-  default = false
+  default     = false
 }
 
 variable "lock_table" {
@@ -108,15 +112,16 @@ variable "lock_key" {
 
 variable "user_data_bucket" {
   description = "The bucket to use for storing user_data instead of directly in instance metadata"
-  default = ""
+  default     = ""
 }
 
 variable "user_data_bucket_compress" {
   description = "Compress and base64encode the user data before storing in the s3 bucket"
-  default = true
+  default     = true
 }
 
 variable "user_data_bucket_recreate_instances_on_update" {
   description = "Set true to force instance recreation on a user-data content change when using the user data bucket"
-  default = true
+  default     = true
 }
+

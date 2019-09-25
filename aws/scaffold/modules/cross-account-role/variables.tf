@@ -6,7 +6,8 @@ variable "upstream_key" {
   description = <<-EOF
     The key selecting the upstream account from account_map.  This account will
     get the group granting access to the roles in the downstream account
-  EOF
+EOF
+
 }
 
 variable "downstream_keys" {
@@ -14,20 +15,23 @@ variable "downstream_keys" {
     The keys selecting the downstream accounts from account_map.  These accounts
     will get the role with given policies attached and allow access from the
     upstream account.
-  EOF
-  type = "list"
+EOF
+
+
+  type = list(string)
 }
 
 variable "current_key" {
   description = <<-EOF
     The current key.  Used to trigger which side of the upstream/downstream
     recipes get triggered.
-  EOF
+EOF
+
 }
 
 variable "account_map" {
   description = "The map of keys -> account_ids"
-  type = "map"
+  type        = map(string)
 }
 
 variable "downstream_role_policies" {
@@ -36,8 +40,10 @@ variable "downstream_role_policies" {
     names for each value policy.  The policy will be evaluated as a template
     with values supplied for upstream_key, upstream_account_id, downstream_key,
     downstream_account_id
-  EOF
-  type = "map"
+EOF
+
+
+  type    = map(string)
   default = {}
 }
 
@@ -45,7 +51,9 @@ variable "enable_keyed_groups" {
   description = <<-EOF
     Creates an upstream group for each downstream key to allow maximum
     flexibility in assigning access to users
-  EOF
+EOF
+
+
   default = true
 }
 
@@ -53,26 +61,33 @@ variable "enable_aggregate_group" {
   description = <<-EOF
     Creates a single upstream group that grants access to all downstream roles
     for convenience in granting users full access
-  EOF
+EOF
+
+
   default = true
 }
 
 variable "aggregate_group_key" {
   description = "Provides the key for the aggregate group"
-  default = "super"
+  default     = "super"
 }
 
 variable "require_mfa" {
   description = <<-EOF
     Forces the downstream role to require MFA be present for the identity
     requesting to assume it
-  EOF
+EOF
+
+
   default = false
 }
 
 variable "max_session_duration" {
   description = <<-EOF
     Set the max session duration on the downstream role
-  EOF
+EOF
+
+
   default = 3600
 }
+

@@ -6,7 +6,9 @@ variable "global_name_prefix" {
   description = <<-EOF
     The global name prefix for disambiguating resource names that have a global
     scope (e.g. s3 bucket names)
-  EOF
+EOF
+
+
   default = ""
 }
 
@@ -14,7 +16,9 @@ variable "local_name_prefix" {
   description = <<-EOF
     The local name prefix for disambiguating resource names that have a local scope
     (e.g. when running multiple environments in the same account)
-  EOF
+EOF
+
+
   default = ""
 }
 
@@ -26,7 +30,10 @@ variable "host_format" {
   description = <<EOF
     The format used to register the friendly hostname in route53 -
     the formatter is passed the component name
-  EOF
+  
+EOF
+
+
   default = "%s-db"
 }
 
@@ -40,7 +47,7 @@ variable "zone_id" {
 
 variable "subnet_ids" {
   description = "The subnet ids for components that need them - can be public or private"
-  type = "list"
+  type        = list(string)
 }
 
 variable "source_security_group" {
@@ -49,8 +56,8 @@ variable "source_security_group" {
 
 variable "security_groups" {
   description = "The security groups associated with the instance"
-  type = "list"
-  default = []
+  type        = list(string)
+  default     = []
 }
 
 variable "parameters" {
@@ -58,8 +65,10 @@ variable "parameters" {
     The db parameters for the instance, mutually exclusive with
     parameter_group_name.  A list of maps of: name=?, value=?, (optional)
     apply_method=immediate|pending-reboot
-  EOF
-  type = "list"
+EOF
+
+
+  type    = list(string)
   default = []
 }
 
@@ -67,7 +76,9 @@ variable "parameter_group_name" {
   description = <<-EOF
     The parameter group associated with the instance, mutually exclusive with
     parameters
-  EOF
+EOF
+
+
   default = ""
 }
 
@@ -85,42 +96,42 @@ variable "family" {
 
 variable "db_instance_type" {
   description = "The instance type for the database instance"
-  default = "db.m3.medium"
+  default     = "db.m3.medium"
 }
 
 variable "db_instance_storage" {
   description = "The allocated storage for the database instance"
-  default = 10
+  default     = 10
 }
 
 variable "db_instance_storage_type" {
   description = "The storage type for the database instance"
-  default = "gp2"
+  default     = "gp2"
 }
 
 variable "db_instance_storage_iops" {
   description = "The iops if using provisioned iops (storage type = io1)"
-  default = 0
+  default     = 0
 }
 
 variable "multi_az" {
   description = "Enable multi AZ for the database"
-  default = false
+  default     = false
 }
 
 variable "backup_retention_period" {
   description = "How long to keep backups"
-  default = 3
+  default     = 3
 }
 
 variable "skip_final_snapshot" {
   description = "Flag to turn off the final snapshot on destruction"
-  default = false
+  default     = false
 }
 
 variable "encrypted" {
   description = "Turn on database encryption"
-  default = false
+  default     = false
 }
 
 variable "db_name" {
@@ -137,10 +148,11 @@ variable "db_password" {
 
 variable "cloudwatch_alarm_target" {
   description = "The target of cloudwatch alarm_actions, usually an sns topic"
-  default = ""
+  default     = ""
 }
 
 variable "publicly_accessible" {
   description = "To make the rds instance have a public prescence"
-  default = false
+  default     = false
 }
+
