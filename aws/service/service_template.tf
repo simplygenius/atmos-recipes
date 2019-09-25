@@ -6,11 +6,11 @@ variable "service_<%= name %>_db_password" {
 
 module "service-<%= name %>-secret-access" {
   source = "../modules/secret-access"
-  secret_config = "${var.secret}"
-  local_name_prefix = "${var.local_name_prefix}"
+  secret_config = var.secret
+  local_name_prefix = "$var.local_name_prefix
   name = "service-<%= name %>"
   // for ssm secrets (the framework does the lookup)
-  role = "${module.service-<%= name %>.execution_role}"
+  role = module.service-<%= name %>.execution_role
   // for s3 secrets (your container does the lookup)
   // role = "${module.service-<%= name %>.task_role}"
   keys = ["service_<%= name %>_db_password"]
@@ -19,9 +19,9 @@ module "service-<%= name %>-secret-access" {
 module "service-<%= name %>-rds" {
   source = "../modules/rds"
 
-  atmos_env = "${var.atmos_env}"
-  global_name_prefix = "${var.global_name_prefix}"
-  local_name_prefix = "${var.local_name_prefix}"
+  atmos_env = var.atmos_env
+  global_name_prefix = var.global_name_prefix
+  local_name_prefix = var.local_name_prefix
   name = "<%= name %>"
 
   engine = "postgres"
@@ -30,15 +30,15 @@ module "service-<%= name %>-rds" {
 
   db_name = "<%= name %>"
   db_username = "<%= name %>"
-  db_password = "${var.service_<%= name %>_db_password}"
+  db_password = var.service_<%= name %>_db_password
 
-  vpc_id = "${module.vpc.vpc_id}"
-  subnet_ids = "${module.vpc.private_subnet_ids}"
-  zone_id = "${module.dns.private_zone_id}"
+  vpc_id = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+  zone_id = module.dns.private_zone_id
 
-  source_security_group = "${module.service-<%= name %>.security_group_id}"
+  source_security_group = module.service-<%= name %>.security_group_id
 
-  cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
+  cloudwatch_alarm_target = local.ops_alerts_topic_arn
 }
 
 <%- end -%>
@@ -47,17 +47,17 @@ module "service-<%= name %>-rds" {
 module "service-<%= name %>-alb" {
   source = "../modules/alb"
 
-  atmos_env = "${var.atmos_env}"
-  global_name_prefix = "${var.global_name_prefix}"
-  local_name_prefix = "${var.local_name_prefix}"
+  atmos_env = var.atmos_env
+  global_name_prefix = var.global_name_prefix
+  local_name_prefix = var.local_name_prefix
   name = "<%= name %>"
 
   internal = <%= ! external_lb %>
-  listener_cidr = "<%= external_lb ? '0.0.0.0/0' : '${var.vpc_cidr}' %>"
-  zone_id = "${module.dns.<%= external_lb ? 'public' : 'private' %>_zone_id}"
-  subnet_ids = "${module.vpc.<%= external_lb ? 'public' : 'private' %>_subnet_ids}"
-  vpc_id = "${module.vpc.vpc_id}"
-  logs_bucket = "${aws_s3_bucket.logs.bucket}"
+  listener_cidr = <%= external_lb ? '"0.0.0.0/0"' : 'var.vpc_cidr' %>
+  zone_id = module.dns.<%= external_lb ? 'public' : 'private' %>_zone_id
+  subnet_ids = module.vpc.<%= external_lb ? 'public' : 'private' %>_subnet_ids
+  vpc_id = module.vpc.vpc_id
+  logs_bucket = aws_s3_bucket.logs.bucket
 
   <%- if cluster_ec2_backed -%>
   // If using ENIs instead of bridge networking on the ecs service, then you
@@ -69,13 +69,13 @@ module "service-<%= name %>-alb" {
   destination_port = 32768
   destination_port_to = 61000
   <%- else -%>
-  destination_port = "${module.service-<%= name %>.port}"
+  destination_port = module.service-<%= name %>.port
   <%- end -%>
 
-  destination_security_group = "${module.service-<%= name %>.security_group_id}"
-  alb_certificate_arn = "${module.wildcart-cert.certificate_arn}"
+  destination_security_group = module.service-<%= name %>.security_group_id
+  alb_certificate_arn = module.wildcart-cert.certificate_arn
 
-  cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
+  cloudwatch_alarm_target = local.ops_alerts_topic_arn
 }
 
 <%- end -%>
@@ -83,13 +83,13 @@ module "service-<%= name %>-alb" {
 <%- if external_lb -%>
 // TODO: make alb module setup private dns entry when external service
 resource "aws_route53_record" "service-<%= name %>-alb-internal" {
-  zone_id = "${module.dns.private_zone_id}"
+  zone_id = module.dns.private_zone_id
   name = "<%= name %>"
   type = "A"
 
   alias {
-    name = "${module.service-<%= name %>-alb.lb_dns_name}"
-    zone_id = "${module.service-<%= name %>-alb.lb_zone_id}"
+    name = module.service-<%= name %>-alb.lb_dns_name
+    zone_id = module.service-<%= name %>-alb.lb_zone_id
     evaluate_target_health = true
   }
 }
@@ -104,20 +104,20 @@ resource "aws_route53_record" "service-<%= name %>-alb-internal" {
 module "service-<%= name %>" {
   source = "../modules/ecs-service"
 
-  atmos_env = "${var.atmos_env}"
-  global_name_prefix = "${var.global_name_prefix}"
-  local_name_prefix = "${var.local_name_prefix}"
-  region = "${var.region}"
+  atmos_env = var.atmos_env
+  global_name_prefix = var.global_name_prefix
+  local_name_prefix = var.local_name_prefix
+  region = var.region
 
-  vpc_id = "${module.vpc.vpc_id}"
-  subnet_ids = "${module.vpc.private_subnet_ids}"
+  vpc_id = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
   // The default security groups allow outbound to internet which is required for
   // pulling docker image from ECR
-  security_groups = ["${module.vpc.security_group_ids}"]
-  cloudwatch_alarm_target = "${local.ops_alerts_topic_arn}"
+  security_groups = module.vpc.security_group_ids
+  cloudwatch_alarm_target = local.ops_alerts_topic_arn
 
   name = "<%= name %>"
-  ecs_cluster_arn = "${aws_ecs_cluster.<%= cluster_name %>.arn}"
+  ecs_cluster_arn = aws_ecs_cluster.<%= cluster_name %>.arn
   <%- if cluster_ec2_backed -%>
   launch_type = "EC2"
   network_mode = "bridge"
@@ -125,7 +125,7 @@ module "service-<%= name %>" {
 
   integrate_with_lb = <%= use_lb ? 1 : 0 %>
   <%- if use_lb -%>
-  alb_target_group_id = "${module.service-<%= name %>-alb.lb_target_group_id}"
+  alb_target_group_id = module.service-<%= name %>-alb.lb_target_group_id
   <%- end -%>
 
   cpu = 256
