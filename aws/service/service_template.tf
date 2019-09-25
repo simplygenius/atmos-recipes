@@ -7,7 +7,7 @@ variable "service_<%= name %>_db_password" {
 module "service-<%= name %>-secret-access" {
   source = "../modules/secret-access"
   secret_config = var.secret
-  local_name_prefix = "$var.local_name_prefix
+  local_name_prefix = var.local_name_prefix
   name = "service-<%= name %>"
   // for ssm secrets (the framework does the lookup)
   role = module.service-<%= name %>.execution_role

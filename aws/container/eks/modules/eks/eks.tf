@@ -105,10 +105,10 @@ resource "aws_eks_cluster" "cluster" {
   role_arn = aws_iam_role.cluster.arn
 
   vpc_config {
-    security_group_ids = [
+    security_group_ids = flatten([
       aws_security_group.cluster.id,
       compact(var.cluster_ssecurity_groups),
-    ]
+    ])
     subnet_ids = var.subnet_ids
   }
 

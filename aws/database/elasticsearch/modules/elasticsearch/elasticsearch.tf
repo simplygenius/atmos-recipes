@@ -43,7 +43,7 @@ resource "aws_elasticsearch_domain" "main" {
 
   vpc_options {
     subnet_ids         = slice(var.subnet_ids, 0, local.subnet_count)
-    security_group_ids = [aws_security_group.default.id, var.security_groups]
+    security_group_ids = flatten([aws_security_group.default.id, compact(var.security_groups)])
   }
 
   dynamic "cluster_config" {

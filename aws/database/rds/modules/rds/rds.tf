@@ -69,10 +69,10 @@ resource "aws_db_instance" "main" {
   db_subnet_group_name = aws_db_subnet_group.main.name
   parameter_group_name = var.parameter_group_name == "" ? element(concat(aws_db_parameter_group.main.*.name, [""]), 0) : var.parameter_group_name
 
-  vpc_security_group_ids = [
+  vpc_security_group_ids = flatten([
     aws_security_group.default.id,
-    var.security_groups,
-  ]
+    var.security_groups
+  ])
 
   tags = {
     Name        = "${var.local_name_prefix}${var.name}"

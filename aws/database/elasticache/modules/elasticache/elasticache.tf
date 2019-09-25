@@ -35,7 +35,7 @@ resource "aws_elasticache_cluster" "main" {
 
   parameter_group_name = aws_elasticache_parameter_group.main.name
   subnet_group_name    = aws_elasticache_subnet_group.main.name
-  security_group_ids   = [aws_security_group.default.id, var.security_groups]
+  security_group_ids   = flatten([aws_security_group.default.id, compact(var.security_groups)])
 
   tags = {
     Name        = "${var.local_name_prefix}${var.name}"
