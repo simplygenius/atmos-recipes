@@ -1,5 +1,5 @@
 module "instance-group-iam-inspect-for-ssh" {
-  source = "../modules/cross-account-role"
+  source = "../modules/cross-account-role-reversed"
 
   atmos_env          = var.atmos_env
   global_name_prefix = var.global_name_prefix

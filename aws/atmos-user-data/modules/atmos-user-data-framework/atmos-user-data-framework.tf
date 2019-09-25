@@ -32,7 +32,7 @@ EOF
 data "template_file" "bootstrap-cloudinit" {
   template = file("${path.module}/templates/bootstrap.tmpl.yml")
   vars = {
-    upgrade_packages = var.upgrade_packages ? "true" : "false"
+    upgrade_packages = var.upgrade_packages == 1 ? "true" : "false"
   }
 }
 

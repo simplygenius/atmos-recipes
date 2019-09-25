@@ -32,7 +32,7 @@ variable "additional_user_data" {
 }
 
 variable "additional_user_data_files" {
-  type        = list(string)
+  type        = list(map(string))
   description = "Additional user data files in the form needed by the cloudinit-files module (list of maps of path/content/owner/permissions)"
   default     = []
 }

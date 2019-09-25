@@ -1,5 +1,5 @@
 variable "files" {
-  type        = list(string)
+  type        = list(map(string))
   description = "A list of files (maps), each containing the keys path (required), content (required), owner (root:root), permissions (0644)"
 }
 

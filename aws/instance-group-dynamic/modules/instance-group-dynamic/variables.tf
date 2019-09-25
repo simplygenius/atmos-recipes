@@ -96,7 +96,7 @@ variable "instance_type" {
 
 variable "root_block_devices" {
   description = "The type of volume to use for the root device for each instance"
-  type        = list(string)
+  type        = list(map(string))
   default = [
     {
       volume_type           = "gp2"

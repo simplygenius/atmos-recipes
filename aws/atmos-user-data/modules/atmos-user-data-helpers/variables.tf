@@ -57,7 +57,7 @@ variable "iam_inspect_role" {
 
 variable "iam_permission_groups" {
   description = "The groups that grant the given permissions - keys of account, ssh, sudo mapping to the iam groups that grant each of those"
-  type        = map(string)
+  type        = map(list(string))
   default = {
     account = []
     ssh     = []

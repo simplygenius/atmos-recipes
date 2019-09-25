@@ -59,7 +59,7 @@ variable "instance_role" {
 
 variable "policies" {
   description = "A list of policies to add to the instance role (list of maps with name, policy keys)"
-  type        = list(string)
+  type        = list(map(string))
   default     = []
 }
 
@@ -90,7 +90,7 @@ variable "iam_inspect_role" {
 
 variable "iam_permission_groups" {
   description = "The groups that grant the given permissions"
-  type        = map(string)
+  type        = map(list(string))
 }
 
 variable "zone_id" {
