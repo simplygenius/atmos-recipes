@@ -5,42 +5,45 @@ locals {
 To receive alerts, use the AWS console to subscribe an email address to the
 SNS topic:
 ${var.local_name_prefix}${var.ops_alerts_topic}
-  EOF
+EOF
 
-  subscribe_topic_ipc = "${jsonencode(map(
-    "action", "notify",
-    "message", local.subscribe_topic_msg
-  ))}"
+
+  subscribe_topic_ipc = jsonencode(
+    {
+      "action"  = "notify"
+      "message" = local.subscribe_topic_msg
+    },
+  )
 }
 
 // Use the AWS console to subscribe an email address to this alert
 resource "aws_sns_topic" "ops-alerts" {
-  count = "${var.ops_alerts_topic == "" ? 0 : 1}"
-  name = "${var.local_name_prefix}${var.ops_alerts_topic}"
+  count        = var.ops_alerts_topic == "" ? 0 : 1
+  name         = "${var.local_name_prefix}${var.ops_alerts_topic}"
   display_name = "Ops Alerts for the ${var.org_prefix}${var.atmos_env} environment"
 
   provisioner "local-exec" {
-    command = "$ATMOS_IPC_CLIENT '${local.subscribe_topic_ipc}'"
-    on_failure = "continue"
+    command    = "$ATMOS_IPC_CLIENT '${local.subscribe_topic_ipc}'"
+    on_failure = continue
   }
 }
 
 data "template_file" "policy-logs-bucket" {
-  vars {
-    bucket = "${var.logs_bucket}"
-    account_id = "${var.account_ids[var.atmos_env]}"
+  vars = {
+    bucket     = var.logs_bucket
+    account_id = var.account_ids[var.atmos_env]
   }
 
-  template = "${file("../templates/policy-logs-bucket.tmpl.json")}"
+  template = file("../templates/policy-logs-bucket.tmpl.json")
 }
 
 resource "aws_s3_bucket" "logs" {
-  bucket = "${var.logs_bucket}"
-  acl = "log-delivery-write"
-  force_destroy = "${var.force_destroy_buckets}"
+  bucket        = var.logs_bucket
+  acl           = "log-delivery-write"
+  force_destroy = var.force_destroy_buckets
 
   lifecycle_rule {
-    prefix = ""
+    prefix  = ""
     enabled = true
 
     expiration {
@@ -49,21 +52,22 @@ resource "aws_s3_bucket" "logs" {
   }
 
   // ELB: https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-access-logs.html#attach-bucket-policy
-  policy = "${data.template_file.policy-logs-bucket.rendered}"
+  policy = data.template_file.policy-logs-bucket.rendered
 
-  tags {
-    Env = "${var.atmos_env}",
+  tags = {
+    Env    = var.atmos_env
     Source = "atmos"
   }
 }
 
 resource "aws_s3_bucket" "backup" {
-  bucket = "${var.backup_bucket}"
-  acl = "private"
-  force_destroy = "${var.force_destroy_buckets}"
+  bucket        = var.backup_bucket
+  acl           = "private"
+  force_destroy = var.force_destroy_buckets
 
-  tags {
-    Env = "${var.atmos_env}",
+  tags = {
+    Env    = var.atmos_env
     Source = "atmos"
   }
 }
+

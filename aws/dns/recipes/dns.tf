@@ -1,4 +1,3 @@
-
 variable "domain" {
   description = "The primary domain name for your organization"
 }
@@ -11,31 +10,34 @@ variable "force_destroy_zones" {
     destroy.  e.g.
       TF_VAR_force_destroy_zones=true atmos apply
       TF_VAR_force_destroy_zones=true atmos destroy
-  EOF
+EOF
+
+
   default = false
 }
 
 module "dns" {
   source = "../modules/dns"
 
-  atmos_env = "${var.atmos_env}"
-  global_name_prefix = "${var.global_name_prefix}"
-  local_name_prefix = "${var.local_name_prefix}"
+  atmos_env          = var.atmos_env
+  global_name_prefix = var.global_name_prefix
+  local_name_prefix  = var.local_name_prefix
 
-  domain = "${var.domain}"
-  vpc_id = "${module.vpc.vpc_id}"
-  force_destroy = "${var.force_destroy_zones}"
+  domain        = var.domain
+  vpc_id        = module.vpc.vpc_id
+  force_destroy = var.force_destroy_zones
 }
 
 module "wildcart-cert" {
   source = "../modules/acm"
 
-  atmos_env = "${var.atmos_env}"
-  global_name_prefix = "${var.global_name_prefix}"
-  local_name_prefix = "${var.local_name_prefix}"
+  atmos_env          = var.atmos_env
+  global_name_prefix = var.global_name_prefix
+  local_name_prefix  = var.local_name_prefix
 
-  domain = "${var.domain}"
+  domain            = var.domain
   alternative_names = ["*.${var.domain}"]
-  zone_id = "${module.dns.public_zone_id}"
-  zone_name_servers = "${module.dns.public_zone_name_servers}"
+  zone_id           = module.dns.public_zone_id
+  zone_name_servers = module.dns.public_zone_name_servers
 }
+

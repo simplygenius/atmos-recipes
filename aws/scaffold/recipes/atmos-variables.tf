@@ -7,21 +7,25 @@ variable "all_env_names" {
     All the atmos environment names in the order they appear in yml file so
     that adding environments doesn't cause transient permission breakages,
     value supplied by atmos runtime
-  EOF
-  type = "list"
+EOF
+
+
+  type = list(string)
 }
 
 variable "account_ids" {
   description = "Maps atmos_envs to account numbers, value supplied by atmos runtime"
-  type = "map"
+  type        = map(string)
 }
 
 variable "atmos_working_group" {
   description = <<-EOF
     The atmos working group - independent groupings of terraform recipes within
     the same env, e.g. bootstrap, default, value supplied by atmos runtime
-  EOF
-  type = "string"
+EOF
+
+
+  type = string
 }
 
 variable "atmos_config" {
@@ -29,8 +33,10 @@ variable "atmos_config" {
     The atmos config hash, value supplied by atmos runtime.  Convenience to allow
     retrieving atmos configuration without having to define additional variable
     resources
-  EOF
-  type = "map"
+EOF
+
+
+  type = map(string)
 }
 
 variable "org" {
@@ -55,12 +61,12 @@ variable "region" {
 
 variable "backend" {
   description = "The backend state configuration, value supplied by atmos.yml"
-  type = "map"
+  type        = map(string)
 }
 
 variable "secret" {
   description = "The secrets configuration, value supplied by atmos.yml"
-  type = "map"
+  type        = map(string)
 }
 
 variable "logs_bucket" {
@@ -73,7 +79,7 @@ variable "backup_bucket" {
 
 variable "is_dev" {
   description = "Indicates a development environment"
-  default = false
+  default     = false
 }
 
 variable "force_destroy_buckets" {
@@ -84,30 +90,43 @@ variable "force_destroy_buckets" {
     destroy.  e.g.
       TF_VAR_force_destroy_buckets=true atmos apply
       TF_VAR_force_destroy_buckets=true atmos destroy
-  EOF
+EOF
+
+
   default = false
 }
 
 variable "require_mfa" {
   description = <<-EOF
     Require MFA wherever it makes sense, e.g. assuming an AWS IAM role
-  EOF
+EOF
+
+
   default = true
 }
 
 variable "ops_alerts_topic" {
   description = "The sns topic name for ops alerts"
-  default = "ops-alerts"
+  default     = "ops-alerts"
 }
 
 locals {
-  ops_env = "ops"
-  ops_account = "${lookup(var.account_ids, local.ops_env)}"
-  current_account = "${lookup(var.account_ids, var.atmos_env)}"
-  envs_without_ops = "${compact(split(",", replace(join(",", var.all_env_names), local.ops_env, "")))}"
+  ops_env         = "ops"
+  ops_account     = var.account_ids[local.ops_env]
+  current_account = var.account_ids[var.atmos_env]
+  envs_without_ops = compact(
+    split(
+      ",",
+      replace(join(",", var.all_env_names), local.ops_env, ""),
+    ),
+  )
+}
+
+terraform {
+  required_version = ">= 0.12"
 }
 
 provider "aws" {
   version = "~> 2.0"
-  region = "${var.region}"
+  region  = var.region
 }

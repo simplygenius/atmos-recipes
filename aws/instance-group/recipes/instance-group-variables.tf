@@ -1,59 +1,59 @@
 variable "instance_keypairs" {
   description = "A map from instance group name to the keypair used for provisioning instances in that group"
-  type = "map"
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "instance_keypairs_default" {
   description = "The default value to use when a keypair for group name is not present in instance_keypair_names"
-  default = ""
+  default     = ""
 }
 
-variable "instance_counts"  {
+variable "instance_counts" {
   description = "A map from instance group name to the number of instances min/max/desired in that group"
-  type = "map"
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "instance_counts_default" {
   description = "The default value to use when a count for group name is not present in instance_counts"
-  default = 1
+  default     = 1
 }
 
 variable "instance_min_count_scale_factor" {
   description = "The scaling factor to use to calculate a minimum instance count (ceil(instance_count/factor)) when autoscaling a group"
-  default = 1
+  default     = 1
 }
 
 variable "instance_max_count_scale_factor" {
   description = "The scaling factor to use to calculate a maximum instance count (instance_count * factor) when autoscaling a group"
-  default = 1
+  default     = 1
 }
 
-variable "instance_types"  {
+variable "instance_types" {
   description = "A map from instance group name to the instance type desired for that group"
-  type = "map"
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "instance_types_default" {
   description = "The default value to use when an instance type for group name is not present in instance_types"
-  default = "t2.micro"
+  default     = "t2.micro"
 }
 
-variable "instance_images"  {
+variable "instance_images" {
   description = "A map from instance group name to the number of instances min/max/desired in that group"
-  type = "map"
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 variable "instance_images_default" {
   description = "The default value to use when an image for group name is not present in instance_images"
-  default = ""
+  default     = ""
 }
 
 locals {
-  instance_images_default = "${var.instance_images_default == "" ? data.aws_ami.ubuntu.image_id : var.instance_images_default}"
+  instance_images_default = var.instance_images_default == "" ? data.aws_ami.ubuntu.image_id : var.instance_images_default
 }
 
 data "aws_ami" "ubuntu" {
@@ -133,3 +133,4 @@ data "aws_ami" "amazon-ecs" {
 
   owners = ["amazon"]
 }
+

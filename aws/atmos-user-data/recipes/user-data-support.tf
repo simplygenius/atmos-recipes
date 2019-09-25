@@ -14,11 +14,11 @@ locals {
 // secrets store!)
 //
 resource "aws_s3_bucket" "user-data" {
-  bucket = "${local.user_data_bucket}"
-  acl = "private"
+  bucket = local.user_data_bucket
+  acl    = "private"
 
   tags = {
-    Env = "${var.atmos_env}",
+    Env    = var.atmos_env
     Source = "atmos"
   }
 
@@ -40,8 +40,9 @@ resource "aws_s3_bucket" "user-data" {
 }
 EOF
 
-  tags {
-    Env = "${var.atmos_env}",
+
+  tags = {
+    Env    = var.atmos_env
     Source = "atmos"
   }
 }
@@ -49,10 +50,11 @@ EOF
 // The restriction to allow reads only from a sourceVpc requires s3 to have a
 // vpc endpoint
 resource "aws_vpc_endpoint" "endpoint" {
-  vpc_id = "${module.vpc.vpc_id}"
+  vpc_id       = module.vpc.vpc_id
   service_name = "com.amazonaws.${var.region}.s3"
-  route_table_ids = [
-    "${module.vpc.public_route_table_ids}",
-    "${module.vpc.private_route_table_ids}"
-  ]
+  route_table_ids = flatten([
+    module.vpc.public_route_table_ids,
+    module.vpc.private_route_table_ids,
+  ])
 }
+

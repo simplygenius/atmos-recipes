@@ -1,21 +1,21 @@
 variable "az_count" {
   description = "The number of AZs to use for redundancy"
-  default = 2
+  default     = 2
 }
 
 variable "vpc_cidr" {
   description = "CIDR for VPC"
-  default = "10.10.0.0/16"
+  default     = "10.10.0.0/16"
 }
 
 variable "vpc_enable_nat" {
   description = "Enable NAT Gateways (one per AZ) for the VPC"
-  default = "1"
+  default     = "1"
 }
 
 variable "vpc_enable_redundant_nat" {
   description = "Enable redundant provisioning of NAT gateways, one per AZ vs one for entire vpc"
-  default = "1"
+  default     = "1"
 }
 
 variable "permissive_default_security_group" {
@@ -33,22 +33,24 @@ variable "permissive_default_security_group" {
     for debugging.  Set to "none" to setup an empty default security group, and
     anything else to leave it untouched.  Note that this has no effect if you
     don't also attach the default security group to your resource
-  EOF
+EOF
+
+
   default = "egress"
 }
-
 
 module "vpc" {
   source = "../modules/vpc"
 
-  atmos_env = "${var.atmos_env}"
-  global_name_prefix = "${var.global_name_prefix}"
-  local_name_prefix = "${var.local_name_prefix}"
+  atmos_env          = var.atmos_env
+  global_name_prefix = var.global_name_prefix
+  local_name_prefix  = var.local_name_prefix
 
-  az_count = "${var.az_count}"
-  vpc_cidr = "${var.vpc_cidr}"
-  enable_nat = "${var.vpc_enable_nat}"
-  enable_redundant_nat = "${var.vpc_enable_redundant_nat}"
+  az_count             = var.az_count
+  vpc_cidr             = var.vpc_cidr
+  enable_nat           = var.vpc_enable_nat
+  enable_redundant_nat = var.vpc_enable_redundant_nat
 
-  permissive_default_security_group = "${var.permissive_default_security_group}"
+  permissive_default_security_group = var.permissive_default_security_group
 }
+
