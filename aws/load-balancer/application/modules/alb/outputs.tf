@@ -8,6 +8,16 @@ output "lb_id" {
   value       = aws_lb.main.id
 }
 
+output "lb_name" {
+  description = "The name of the load balancer"
+  value       = aws_lb.main.name
+}
+
+output "lb_arn_suffix" {
+  description = "The arn suffix (for metric alarms) of the load balancer"
+  value       = aws_lb.main.arn_suffix
+}
+
 output "lb_target_group_id" {
   description = "The target group id of the load balancer"
   value       = aws_lb_target_group.main.id
