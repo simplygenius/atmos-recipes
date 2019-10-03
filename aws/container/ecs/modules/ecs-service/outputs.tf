@@ -33,3 +33,7 @@ output "security_group_id" {
   value       = aws_security_group.default.id
 }
 
+output "service_name" {
+  description = "The service_name"
+  value       = concat(aws_ecs_service.with_autoscale.*.name, aws_ecs_service.without_autoscale.*.name)[0]
+}

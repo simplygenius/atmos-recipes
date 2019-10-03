@@ -92,6 +92,11 @@ variable "container_count" {
   default     = 2
 }
 
+variable "autoscaling" {
+  description = "Indicates that the container count is being set by autoscaling"
+  default = false
+}
+
 variable "deployment_minimum_healthy_percent" {
   description = "The minimum percent of nodes to keep up when deploying"
   default     = 100

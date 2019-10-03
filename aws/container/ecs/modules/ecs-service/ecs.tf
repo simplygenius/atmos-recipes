@@ -137,29 +137,11 @@ data "aws_ecs_task_definition" "main" {
 locals {
   lb = signum(var.integrate_with_lb) == 1
   nc = var.network_mode == "awsvpc"
+
 }
 
-resource "aws_ecs_service" "neither_lb_nor_nc" {
-  count = false == local.lb && false == local.nc ? 1 : 0
-
-  name = "${var.local_name_prefix}${var.name}"
-
-  launch_type = var.launch_type
-  cluster     = var.ecs_cluster_arn
-
-  desired_count                      = var.container_count
-  deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
-  deployment_maximum_percent         = var.deployment_maximum_percent
-
-  # Track the latest ACTIVE revision
-  task_definition = "${aws_ecs_task_definition.main.family}:${max(
-    aws_ecs_task_definition.main.revision,
-    data.aws_ecs_task_definition.main.revision,
-  )}"
-}
-
-resource "aws_ecs_service" "lb_only" {
-  count = local.lb && false == local.nc ? 1 : 0
+resource "aws_ecs_service" "without_autoscale" {
+  count = var.autoscaling ? 0 : 1
 
   name = "${var.local_name_prefix}${var.name}"
 
@@ -176,15 +158,26 @@ resource "aws_ecs_service" "lb_only" {
     data.aws_ecs_task_definition.main.revision,
   )}"
 
-  load_balancer {
-    target_group_arn = var.alb_target_group_id
-    container_name   = "${var.local_name_prefix}${var.name}"
-    container_port   = var.port
+  dynamic "load_balancer" {
+    for_each = local.lb ? [var.alb_target_group_id] : []
+    content {
+      target_group_arn = load_balancer.value
+      container_name   = "${var.local_name_prefix}${var.name}"
+      container_port   = var.port
+    }
+  }
+
+  dynamic "network_configuration" {
+    for_each = local.nc ? [1] : []
+    content {
+      security_groups = flatten([aws_security_group.default.id, var.security_groups])
+      subnets         = var.subnet_ids
+    }
   }
 }
 
-resource "aws_ecs_service" "nc_only" {
-  count = false == local.lb && local.nc ? 1 : 0
+resource "aws_ecs_service" "with_autoscale" {
+  count = var.autoscaling ? 1 : 0
 
   name = "${var.local_name_prefix}${var.name}"
 
@@ -201,39 +194,24 @@ resource "aws_ecs_service" "nc_only" {
     data.aws_ecs_task_definition.main.revision,
   )}"
 
-  network_configuration {
-    security_groups = flatten([aws_security_group.default.id, var.security_groups])
-    subnets         = var.subnet_ids
+  dynamic "load_balancer" {
+    for_each = local.lb ? [1] : []
+    content {
+      target_group_arn = var.alb_target_group_id
+      container_name   = "${var.local_name_prefix}${var.name}"
+      container_port   = var.port
+    }
+  }
+
+  dynamic "network_configuration" {
+    for_each = local.nc ? [1] : []
+    content {
+      security_groups = flatten([aws_security_group.default.id, var.security_groups])
+      subnets         = var.subnet_ids
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
   }
 }
-
-resource "aws_ecs_service" "lb_and_nc" {
-  count = local.lb && local.nc ? 1 : 0
-
-  name = "${var.local_name_prefix}${var.name}"
-
-  launch_type = var.launch_type
-  cluster     = var.ecs_cluster_arn
-
-  desired_count                      = var.container_count
-  deployment_minimum_healthy_percent = var.deployment_minimum_healthy_percent
-  deployment_maximum_percent         = var.deployment_maximum_percent
-
-  # Track the latest ACTIVE revision
-  task_definition = "${aws_ecs_task_definition.main.family}:${max(
-    aws_ecs_task_definition.main.revision,
-    data.aws_ecs_task_definition.main.revision,
-  )}"
-
-  load_balancer {
-    target_group_arn = var.alb_target_group_id
-    container_name   = "${var.local_name_prefix}${var.name}"
-    container_port   = var.port
-  }
-
-  network_configuration {
-    security_groups = flatten([aws_security_group.default.id, var.security_groups])
-    subnets         = var.subnet_ids
-  }
-}
-
